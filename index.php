@@ -7,7 +7,20 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['projectName'])) {
 			mkdir($dir, 0755, true);
 			file_put_contents(
 				"{$dir}/index.php",
-				"<?php\n// {$projectName} project\n?><!DOCTYPE html>\n<html><head><title>{$projectName}</title></head><body><h1>{$projectName}</h1></body></html>"
+				<<<PHP
+<?php
+// {$projectName} project
+?><!DOCTYPE html>
+<html lang="en">
+<head>
+	<meta charset="UTF-8">
+	<title>{$projectName}</title>
+</head>
+<body>
+	<h1>Hello mate</h1>
+</body>
+</html>
+PHP
 			);
 			header("Location: " . $_SERVER['PHP_SELF']);
 			exit;
@@ -18,6 +31,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['projectName'])) {
 		$error = 'Invalid project name.';
 	}
 }
+
 if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['renameProject'])) {
 	header('Content-Type: application/json');
 	$old = trim($_POST['oldName']);
@@ -181,6 +195,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['deleteProject'])) {
 			?>
 		</div>
 	</div>
+	<div id="realtimeClock"></div>
 
 	<script>
 		<?php if (!empty($error)): ?>
@@ -226,6 +241,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['deleteProject'])) {
 						title: 'Invalid project name',
 						text: 'Allowed: letters, numbers, spaces, -, _ (max 32 chars)'
 					});
+					applySwalDarkmode();
 					return false;
 				}
 				e.preventDefault();
@@ -248,7 +264,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['deleteProject'])) {
 				const query = $(this).val().toLowerCase();
 				$('#projectGrid a.project-link').each(function () {
 					const name = $(this).data('name').toLowerCase();
-					$(this).parent().toggle(name.includes(query));
+					$(this).closest('.col').toggle(name.includes(query));
 				});
 			});
 
@@ -306,8 +322,10 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['deleteProject'])) {
 						$.post('', { renameProject: 1, oldName: oldName, newName: result.value }, function (resp) {
 							if (resp.success) {
 								Swal.fire('Renamed!', '', 'success').then(() => location.reload());
+								applySwalDarkmode();
 							} else {
 								Swal.fire('Error', resp.error || 'Failed to rename folder.', 'error');
+								applySwalDarkmode();
 							}
 						}, 'json');
 					}
@@ -330,14 +348,72 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['deleteProject'])) {
 						$.post('', { deleteProject: 1, name: name }, function (resp) {
 							if (resp.success) {
 								Swal.fire('Deleted!', '', 'success').then(() => location.reload());
+								applySwalDarkmode();
 							} else {
 								Swal.fire('Error', resp.error || 'Failed to delete folder.', 'error');
+								applySwalDarkmode();
 							}
 						}, 'json');
 					}
 				});
 				applySwalDarkmode();
 			});
+		});
+		let lastWorldTime = null;
+		let lastWorldTimeTs = null;
+
+		function fetchWorldClock() {
+			$.ajax({
+				url: 'https://api.api-ninjas.com/v1/worldtime?timezone=asia/jakarta',
+				method: 'GET',
+				dataType: 'json',
+				timeout: 3000,
+				headers: { 'X-Api-Key': 'vqtdn5h8Bc9o2ujlg6GboQ==5mItNDgsfYQBz9lc' },
+				success: function (resp) {
+					if (resp && resp.datetime) {
+						lastWorldTime = new Date(resp.datetime.replace(' ', 'T'));
+						lastWorldTimeTs = Date.now();
+						updateClockDisplay();
+					} else {
+						updateClockLocal();
+					}
+				},
+				error: function () {
+					updateClockLocal();
+				}
+			});
+		}
+
+		function updateClockDisplay() {
+			if (lastWorldTime && lastWorldTimeTs) {
+				const now = new Date(lastWorldTime.getTime() + (Date.now() - lastWorldTimeTs));
+				const pad = n => n.toString().padStart(2, '0');
+				const time = `${pad(now.getHours())}:${pad(now.getMinutes())}:${pad(now.getSeconds())}`;
+				const date = `${pad(now.getDate())} ${pad(now.getMonth() + 1)} ${now.getFullYear()}`;
+				$('#realtimeClock').text(`${date} ${time} (Jakarta)`);
+			} else {
+				updateClockLocal();
+			}
+		}
+
+		function updateClockLocal() {
+			const now = new Date();
+			const pad = n => n.toString().padStart(2, '0');
+			const time = `${pad(now.getHours())}:${pad(now.getMinutes())}:${pad(now.getSeconds())}`;
+			const date = `${now.getFullYear()}-${pad(now.getMonth() + 1)}-${pad(now.getDate())}`;
+			$('#realtimeClock').text(`${date} ${time} (local)`);
+		}
+
+		$(function () {
+			fetchWorldClock();
+			setInterval(function () {
+				if (lastWorldTime) {
+					updateClockDisplay();
+				} else {
+					updateClockLocal();
+				}
+			}, 1000);
+			setInterval(fetchWorldClock, 60000);
 		});
 	</script>
 </body>

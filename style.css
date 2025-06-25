@@ -110,6 +110,7 @@ body {
 	font-weight: 500;
 	height: calc(2.375rem + 2px);
 	/* sama dengan tinggi form-control Bootstrap */
+	width: 20vw;
 	box-shadow: 0 3px 10px rgba(79, 140, 255, 0.2);
 	transition: all 0.2s ease-in-out;
 }
@@ -314,4 +315,26 @@ body.darkmode {
 	.dashboard-title {
 		font-size: 1.5rem;
 	}
+}
+
+#realtimeClock {
+	position: fixed;
+	bottom: 20px;
+	right: 30px;
+	z-index: 9999;
+	font-size: 1.2rem;
+	padding: 8px 16px;
+	background: rgba(30, 30, 30, 0.85);
+	color: #fff;
+	border-radius: 8px;
+	box-shadow: 0 2px 8px rgba(0, 0, 0, 0.2);
+	font-family: monospace;
+	transition: background 0.3s, color 0.3s;
+}
+
+body:not(.darkmode) #realtimeClock {
+	background: rgba(255, 255, 255, 0.95);
+	color: #23262b;
+	box-shadow: 0 2px 8px rgba(0, 0, 0, 0.08);
+	border: 1px solid #e0e0e0;
 }
