@@ -1,87 +1,6 @@
 <?php
-if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['projectName'])) {
-	$projectName = trim($_POST['projectName']);
-	if (preg_match('/^[A-Za-z0-9_\- ]{1,32}$/', $projectName)) {
-		$dir = __DIR__ . '/' . $projectName;
-		if (!file_exists($dir)) {
-			mkdir($dir, 0755, true);
-			file_put_contents(
-				"{$dir}/index.php",
-				<<<PHP
-<?php
-// {$projectName} project
-?><!DOCTYPE html>
-<html lang="en">
-<head>
-	<meta charset="UTF-8">
-	<title>{$projectName}</title>
-</head>
-<body>
-	<h1>Hello mate</h1>
-</body>
-</html>
-PHP
-			);
-			header("Location: " . $_SERVER['PHP_SELF']);
-			exit;
-		} else {
-			$error = 'Project already exists.';
-		}
-	} else {
-		$error = 'Invalid project name.';
-	}
-}
-
-if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['renameProject'])) {
-	header('Content-Type: application/json');
-	$old = trim($_POST['oldName']);
-	$new = trim($_POST['newName']);
-	if (!preg_match('/^[A-Za-z0-9_\- ]{1,32}$/', $new)) {
-		echo json_encode(['success' => false, 'error' => 'Invalid new name.']);
-		exit;
-	}
-	if (!is_dir($old)) {
-		echo json_encode(['success' => false, 'error' => 'Original folder not found.']);
-		exit;
-	}
-	if (is_dir($new)) {
-		echo json_encode(['success' => false, 'error' => 'Target name already exists.']);
-		exit;
-	}
-	if (rename($old, $new)) {
-		echo json_encode(['success' => true]);
-	} else {
-		echo json_encode(['success' => false, 'error' => 'Rename failed.']);
-	}
-	exit;
-}
-function rrmdir($dir)
-{
-	if (is_dir($dir)) {
-		$objects = scandir($dir);
-		foreach ($objects as $object) {
-			if ($object != "." && $object != "..") {
-				$path = $dir . "/" . $object;
-				if (is_dir($path))
-					rrmdir($path);
-				else
-					unlink($path);
-			}
-		}
-		rmdir($dir);
-	}
-}
-
-if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['deleteProject'])) {
-	header('Content-Type: application/json');
-	$target = trim($_POST['name']);
-	if (!is_dir($target)) {
-		echo json_encode(['success' => false, 'error' => 'Folder not found.']);
-		exit;
-	}
-	rrmdir($target);
-	echo json_encode(['success' => true]);
-	exit;
+foreach (glob(__DIR__ . '/.clone_log_clone_*') as $logFile) {
+	@unlink($logFile);
 }
 ?>
 <!DOCTYPE html>
@@ -116,6 +35,10 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['deleteProject'])) {
 					<i class="fa-solid fa-plus"></i>
 					<span>Create Project</span>
 				</button>
+				<button id="cloneProjectBtn" class="btn-clone-project">
+					<i class="fa-solid fa-plus"></i>
+					<span>Clone github Project</span>
+				</button>
 			</div>
 		</div>
 
@@ -141,6 +64,47 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['deleteProject'])) {
 						<div class="modal-footer">
 							<button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancel</button>
 							<button type="submit" class="btn btn-primary">Create</button>
+						</div>
+					</form>
+				</div>
+			</div>
+		</div>
+
+		<div class="modal fade" id="cloneProjectModal" tabindex="-1" aria-labelledby="cloneProjectModalLabel"
+			aria-hidden="true">
+			<div class="modal-dialog modal-dialog-centered">
+				<div class="modal-content">
+					<form id="cloneProjectForm">
+						<div class="modal-header">
+							<h5 class="modal-title">Clone GitHub Project</h5>
+							<button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+						</div>
+						<div class="modal-body">
+							<div class="mb-3">
+								<label for="githubUrl" class="form-label">GitHub Repository URL</label>
+								<input type="url" class="form-control" id="githubUrl" name="githubUrl" required
+									placeholder="https://github.com/user/repo.git">
+							</div>
+							<div class="mb-3">
+								<label for="cloneFolder" class="form-label">Target Folder Name</label>
+								<input type="text" class="form-control" id="cloneFolder" name="cloneFolder" required
+									pattern="[A-Za-z0-9_\- ]{1,32}" maxlength="32" placeholder="Folder name">
+								<div class="form-text">Allowed: letters, numbers, spaces, -, _ (max 32 chars)</div>
+							</div>
+							<div id="cloneProjectError" class="text-danger small"></div>
+							<div class="mb-3" id="cloneProgressArea" style="display:none;">
+								<label class="form-label">Clone Progress</label>
+								<div class="progress mb-2">
+									<div id="cloneProgressBar" class="progress-bar" role="progressbar" style="width:0%">
+										0%</div>
+								</div>
+								<pre id="cloneLog"
+									style="height:120px;overflow:auto;background:#222;color:#eee;padding:8px;font-size:12px;"></pre>
+							</div>
+						</div>
+						<div class="modal-footer">
+							<button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancel</button>
+							<button type="submit" class="btn btn-primary">Clone</button>
 						</div>
 					</form>
 				</div>
@@ -319,7 +283,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['deleteProject'])) {
 					}
 				}).then((result) => {
 					if (result.isConfirmed) {
-						$.post('', { renameProject: 1, oldName: oldName, newName: result.value }, function (resp) {
+						$.post('api.php', { renameProject: 1, oldName: oldName, newName: result.value }, function (resp) {
 							if (resp.success) {
 								Swal.fire('Renamed!', '', 'success').then(() => location.reload());
 								applySwalDarkmode();
@@ -345,7 +309,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['deleteProject'])) {
 					confirmButtonColor: '#d33'
 				}).then((result) => {
 					if (result.isConfirmed) {
-						$.post('', { deleteProject: 1, name: name }, function (resp) {
+						$.post('api.php', { deleteProject: 1, name: name }, function (resp) {
 							if (resp.success) {
 								Swal.fire('Deleted!', '', 'success').then(() => location.reload());
 								applySwalDarkmode();
@@ -414,6 +378,87 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['deleteProject'])) {
 				}
 			}, 1000);
 			setInterval(fetchWorldClock, 60000);
+		});
+
+		const cloneModal = new bootstrap.Modal(document.getElementById('cloneProjectModal'));
+
+		$('#cloneProjectBtn').on('click', function () {
+			$('#githubUrl').val('');
+			$('#cloneFolder').val('');
+			$('#cloneProjectError').text('');
+			cloneModal.show();
+		});
+
+		let cloneJobId = null;
+		let clonePollTimer = null;
+
+		function pollCloneProgress() {
+			if (!cloneJobId) return;
+			$.post('api.php', { cloneProgress: 1, jobId: cloneJobId, cloneFolder: $('#cloneFolder').val().trim() }, function (resp) {
+				$('#cloneProgressArea').show();
+				$('#cloneLog').text(resp.log && resp.log.length > 0 ? resp.log : 'Starting clone...');
+				$('#cloneProgressBar').css('width', resp.percent + '%').text(resp.percent + '%');
+				if (resp.done) {
+					$('#cloneProgressBar').removeClass('bg-info').addClass('bg-success');
+					cloneJobId = null;
+					clearTimeout(clonePollTimer);
+					Swal.fire({
+						position: 'top-end',
+						icon: 'success',
+						title: 'Clone Complete!',
+						text: 'The GitHub project was cloned successfully.',
+						confirmButtonText: 'OK'
+					}).then(() => {
+						location.reload();
+					});
+					applySwalDarkmode();
+				} else {
+					clonePollTimer = setTimeout(pollCloneProgress, 500); // Faster polling
+				}
+			}, 'json').fail(function () {
+				$('#cloneLog').text('Waiting for clone process...');
+				clonePollTimer = setTimeout(pollCloneProgress, 1000);
+			});
+		}
+
+		$('#cloneProjectForm').on('submit', function (e) {
+			e.preventDefault();
+			const url = $('#githubUrl').val().trim();
+			const folder = $('#cloneFolder').val().trim();
+			if (!/^(https:\/\/([^@]+@)?github\.com\/[^/]+\/[^/]+(\.git)?|git@github\.com:[^/]+\/[^/]+(\.git)?)$/i.test(url)) {
+				$('#cloneProjectError').text('Invalid GitHub URL.');
+				return false;
+			}
+			if (!/^[A-Za-z0-9_\- ]{1,32}$/.test(folder)) {
+				$('#cloneProjectError').text('Invalid folder name.');
+				return false;
+			}
+			$('#cloneProjectError').text('');
+			$('#cloneProgressArea').show();
+			$('#cloneProgressBar').removeClass('bg-success').addClass('bg-info').css('width', '0%').text('0%');
+			$('#cloneLog').text('');
+			Swal.fire({
+				title: 'Clone project?',
+				text: `Clone "${url}" into folder "${folder}"?`,
+				icon: 'question',
+				showCancelButton: true,
+				confirmButtonText: 'Clone',
+				cancelButtonText: 'Cancel'
+			}).then((result) => {
+				if (result.isConfirmed) {
+					$.post('api.php', { cloneGithub: 1, githubUrl: url, cloneFolder: folder }, function (resp) {
+						if (resp.success && resp.jobId) {
+							cloneJobId = resp.jobId;
+							pollCloneProgress();
+						} else {
+							$('#cloneProjectError').text(resp.error || 'Clone failed.');
+							Swal.fire('Error', resp.error || 'Clone failed.', 'error');
+						}
+						applySwalDarkmode();
+					}, 'json');
+				}
+			});
+			applySwalDarkmode();
 		});
 	</script>
 </body>

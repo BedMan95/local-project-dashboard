@@ -129,6 +129,38 @@ body {
 	transform: scale(0.97);
 }
 
+.btn-clone-project {
+	display: flex;
+	align-items: center;
+	justify-content: center;
+	gap: 0.5rem;
+	background: linear-gradient(135deg, #4f8cff, #2563eb);
+	color: white;
+	border: none;
+	border-radius: 2rem;
+	padding: 0 1rem;
+	font-size: 0.95rem;
+	font-weight: 500;
+	height: calc(2.375rem + 2px);
+	/* sama dengan tinggi form-control Bootstrap */
+	width: 30vw;
+	box-shadow: 0 3px 10px rgba(79, 140, 255, 0.2);
+	transition: all 0.2s ease-in-out;
+}
+
+.btn-clone-project i {
+	font-size: 1rem;
+}
+
+.btn-clone-project:hover {
+	transform: translateY(-1px);
+	box-shadow: 0 5px 16px rgba(79, 140, 255, 0.3);
+	background: linear-gradient(135deg, #3b82f6, #1d4ed8);
+}
+
+.btn-clone-project:active {
+	transform: scale(0.97);
+}
 
 #projectGrid {
 	max-height: 55vh;
