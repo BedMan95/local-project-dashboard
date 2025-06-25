@@ -19,22 +19,27 @@ function rrmdir($dir)
 if ($_SERVER['REQUEST_METHOD'] === 'POST') {
     // Create project
     if (isset($_POST['projectName'])) {
+        header('Content-Type: application/json');
         $projectName = trim($_POST['projectName']);
-        if (preg_match('/^[A-Za-z0-9_\- ]{1,32}$/', $projectName)) {
-            $dir = __DIR__ . '/' . $projectName;
-            if (!file_exists($dir)) {
-                mkdir($dir, 0755, true);
-                file_put_contents(
-                    "{$dir}/index.php",
-                    "<?php\n// {$projectName} project\n?><!DOCTYPE html>\n<html lang=\"en\">\n<head>\n\t<meta charset=\"UTF-8\">\n\t<title>{$projectName}</title>\n</head>\n<body>\n\t<h1>Hello mate</h1>\n</body>\n</html>"
-                );
-                echo json_encode(['success' => true]);
-            } else {
-                echo json_encode(['success' => false, 'error' => 'Project already exists.']);
-            }
-        } else {
+        if (!preg_match('/^[A-Za-z0-9_\- ]{1,32}$/', $projectName)) {
             echo json_encode(['success' => false, 'error' => 'Invalid project name.']);
+            exit;
         }
+        $dir = __DIR__ . '/' . $projectName;
+        if (file_exists($dir)) {
+            echo json_encode(['success' => false, 'error' => 'Project already exists.']);
+            exit;
+        }
+        if (!mkdir($dir, 0755, true)) {
+            echo json_encode(['success' => false, 'error' => 'Failed to create project directory.']);
+            exit;
+        }
+        $indexContent = "<?php\n// {$projectName} project\n?><!DOCTYPE html>\n<html lang=\"en\">\n<head>\n\t<meta charset=\"UTF-8\">\n\t<title>{$projectName}</title>\n</head>\n<body>\n\t<h1>Hello mate</h1>\n</body>\n</html>";
+        if (file_put_contents("{$dir}/index.php", $indexContent) === false) {
+            echo json_encode(['success' => false, 'error' => 'Failed to create index.php.']);
+            exit;
+        }
+        echo json_encode(['success' => true]);
         exit;
     }
 

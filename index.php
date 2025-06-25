@@ -197,9 +197,9 @@ foreach (glob(__DIR__ . '/.clone_log_clone_*') as $logFile) {
 			});
 
 			$('#createProjectForm').on('submit', function (e) {
+				e.preventDefault();
 				const name = $('#projectName').val().trim();
 				if (!/^[A-Za-z0-9_\- ]{1,32}$/.test(name)) {
-					e.preventDefault();
 					Swal.fire({
 						icon: 'error',
 						title: 'Invalid project name',
@@ -208,7 +208,6 @@ foreach (glob(__DIR__ . '/.clone_log_clone_*') as $logFile) {
 					applySwalDarkmode();
 					return false;
 				}
-				e.preventDefault();
 				Swal.fire({
 					title: 'Create project?',
 					text: 'Create project "' + name + '"?',
@@ -218,7 +217,14 @@ foreach (glob(__DIR__ . '/.clone_log_clone_*') as $logFile) {
 					cancelButtonText: 'Cancel'
 				}).then((result) => {
 					if (result.isConfirmed) {
-						$('#createProjectForm')[0].submit();
+						$.post('api.php', { projectName: name }, function (resp) {
+							if (resp.success) {
+								Swal.fire('Created!', '', 'success').then(() => location.reload());
+							} else {
+								Swal.fire('Error', resp.error || 'Failed to create project.', 'error');
+							}
+							applySwalDarkmode();
+						}, 'json');
 					}
 				});
 				applySwalDarkmode();
