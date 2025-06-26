@@ -39,6 +39,21 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
             echo json_encode(['success' => false, 'error' => 'Failed to create index.php.']);
             exit;
         }
+        // Add to .gitignore if not already present
+        $gitignore = __DIR__ . '/.gitignore';
+        $alreadyIgnored = false;
+        if (file_exists($gitignore)) {
+            $lines = file($gitignore, FILE_IGNORE_NEW_LINES | FILE_SKIP_EMPTY_LINES);
+            foreach ($lines as $line) {
+                if (trim($line) === $projectName) {
+                    $alreadyIgnored = true;
+                    break;
+                }
+            }
+        }
+        if (!$alreadyIgnored) {
+            file_put_contents($gitignore, $projectName . "\n", FILE_APPEND | LOCK_EX);
+        }
         echo json_encode(['success' => true]);
         exit;
     }
@@ -60,6 +75,21 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
             exit;
         }
         if (rename($old, $new)) {
+            // Update .gitignore: remove old, add new
+            $gitignore = __DIR__ . '/.gitignore';
+            $lines = [];
+            if (file_exists($gitignore)) {
+                $lines = file($gitignore, FILE_IGNORE_NEW_LINES | FILE_SKIP_EMPTY_LINES);
+                // Remove old name
+                $lines = array_filter($lines, function ($line) use ($old) {
+                    return trim($line) !== $old;
+                });
+            }
+            // Add new name if not present
+            if (!in_array($new, $lines)) {
+                $lines[] = $new;
+            }
+            file_put_contents($gitignore, implode("\n", $lines) . "\n", LOCK_EX);
             echo json_encode(['success' => true]);
         } else {
             echo json_encode(['success' => false, 'error' => 'Rename failed.']);
@@ -74,8 +104,33 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
             echo json_encode(['success' => false, 'error' => 'Folder not found.']);
             exit;
         }
-        rrmdir($target);
-        if (is_dir($target)) {
+
+        // Use shell command for recursive delete
+        $isWindows = strtoupper(substr(PHP_OS, 0, 3)) === 'WIN';
+        if ($isWindows) {
+            // Windows: rmdir /s /q
+            shell_exec('rmdir /s /q ' . escapeshellarg($target));
+        } else {
+            // Linux/macOS: rm -rf
+            shell_exec('rm -rf ' . escapeshellarg($target));
+        }
+
+        // Remove from .gitignore
+        $gitignore = __DIR__ . '/.gitignore';
+        if (file_exists($gitignore)) {
+            $lines = file($gitignore, FILE_IGNORE_NEW_LINES | FILE_SKIP_EMPTY_LINES);
+            $lines = array_filter($lines, function ($line) use ($target) {
+                return trim($line) !== $target;
+            });
+            file_put_contents($gitignore, implode("\n", $lines) . "\n", LOCK_EX);
+        }
+
+        $maxWait = 10; // 10 x 100ms = 1s
+        while ($maxWait-- > 0 && file_exists($target)) {
+            usleep(100000); // 100ms
+        }
+
+        if (file_exists($target)) {
             echo json_encode(['success' => false, 'error' => 'Some files could not be deleted due to permission issues.']);
         } else {
             echo json_encode(['success' => true]);
