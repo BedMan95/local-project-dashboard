@@ -187,6 +187,22 @@ foreach (glob(__DIR__ . '/.clone_log_clone_*') as $logFile) {
 				});
 			}
 		}
+
+		function showLoading(message = 'Loading...') {
+			Swal.fire({
+				title: message,
+				allowOutsideClick: false,
+				didOpen: () => {
+					Swal.showLoading();
+				}
+			});
+			applySwalDarkmode();
+		}
+
+		function hideLoading() {
+			Swal.close();
+		}
+
 		$(function () {
 			const modal = new bootstrap.Modal(document.getElementById('createProjectModal'));
 
@@ -217,14 +233,20 @@ foreach (glob(__DIR__ . '/.clone_log_clone_*') as $logFile) {
 					cancelButtonText: 'Cancel'
 				}).then((result) => {
 					if (result.isConfirmed) {
+						showLoading('Creating project...');
 						$.post('api.php', { projectName: name }, function (resp) {
+							hideLoading();
 							if (resp.success) {
 								Swal.fire('Created!', '', 'success').then(() => location.reload());
 							} else {
 								Swal.fire('Error', resp.error || 'Failed to create project.', 'error');
 							}
 							applySwalDarkmode();
-						}, 'json');
+						}, 'json').fail(function () {
+							hideLoading();
+							Swal.fire('Error', 'Failed to create project.', 'error');
+							applySwalDarkmode();
+						});
 					}
 				});
 				applySwalDarkmode();
@@ -289,7 +311,9 @@ foreach (glob(__DIR__ . '/.clone_log_clone_*') as $logFile) {
 					}
 				}).then((result) => {
 					if (result.isConfirmed) {
+						showLoading('Renaming project...');
 						$.post('api.php', { renameProject: 1, oldName: oldName, newName: result.value }, function (resp) {
+							hideLoading();
 							if (resp.success) {
 								Swal.fire('Renamed!', '', 'success').then(() => location.reload());
 								applySwalDarkmode();
@@ -297,7 +321,11 @@ foreach (glob(__DIR__ . '/.clone_log_clone_*') as $logFile) {
 								Swal.fire('Error', resp.error || 'Failed to rename folder.', 'error');
 								applySwalDarkmode();
 							}
-						}, 'json');
+						}, 'json').fail(function () {
+							hideLoading();
+							Swal.fire('Error', 'Failed to rename folder.', 'error');
+							applySwalDarkmode();
+						});
 					}
 				});
 				applySwalDarkmode();
@@ -315,7 +343,9 @@ foreach (glob(__DIR__ . '/.clone_log_clone_*') as $logFile) {
 					confirmButtonColor: '#d33'
 				}).then((result) => {
 					if (result.isConfirmed) {
+						showLoading('Deleting project...');
 						$.post('api.php', { deleteProject: 1, name: name }, function (resp) {
+							hideLoading();
 							if (resp.success) {
 								Swal.fire('Deleted!', '', 'success').then(() => location.reload());
 								applySwalDarkmode();
@@ -323,7 +353,11 @@ foreach (glob(__DIR__ . '/.clone_log_clone_*') as $logFile) {
 								Swal.fire('Error', resp.error || 'Failed to delete folder.', 'error');
 								applySwalDarkmode();
 							}
-						}, 'json');
+						}, 'json').fail(function () {
+							hideLoading();
+							Swal.fire('Error', 'Failed to delete folder.', 'error');
+							applySwalDarkmode();
+						});
 					}
 				});
 				applySwalDarkmode();
@@ -395,37 +429,37 @@ foreach (glob(__DIR__ . '/.clone_log_clone_*') as $logFile) {
 			cloneModal.show();
 		});
 
-		let cloneJobId = null;
-		let clonePollTimer = null;
+		// let cloneJobId = null;
+		// let clonePollTimer = null;
 
-		function pollCloneProgress() {
-			if (!cloneJobId) return;
-			$.post('api.php', { cloneProgress: 1, jobId: cloneJobId, cloneFolder: $('#cloneFolder').val().trim() }, function (resp) {
-				$('#cloneProgressArea').show();
-				$('#cloneLog').text(resp.log && resp.log.length > 0 ? resp.log : 'Starting clone...');
-				$('#cloneProgressBar').css('width', resp.percent + '%').text(resp.percent + '%');
-				if (resp.done) {
-					$('#cloneProgressBar').removeClass('bg-info').addClass('bg-success');
-					cloneJobId = null;
-					clearTimeout(clonePollTimer);
-					Swal.fire({
-						position: 'top-end',
-						icon: 'success',
-						title: 'Clone Complete!',
-						text: 'The GitHub project was cloned successfully.',
-						confirmButtonText: 'OK'
-					}).then(() => {
-						location.reload();
-					});
-					applySwalDarkmode();
-				} else {
-					clonePollTimer = setTimeout(pollCloneProgress, 500); // Faster polling
-				}
-			}, 'json').fail(function () {
-				$('#cloneLog').text('Waiting for clone process...');
-				clonePollTimer = setTimeout(pollCloneProgress, 1000);
-			});
-		}
+		// function pollCloneProgress() {
+		// 	if (!cloneJobId) return;
+		// 	$.post('api.php', { cloneProgress: 1, jobId: cloneJobId, cloneFolder: $('#cloneFolder').val().trim() }, function (resp) {
+		// 		$('#cloneProgressArea').show();
+		// 		$('#cloneLog').text(resp.log && resp.log.length > 0 ? resp.log : 'Starting clone...');
+		// 		$('#cloneProgressBar').css('width', resp.percent + '%').text(resp.percent + '%');
+		// 		if (resp.done) {
+		// 			$('#cloneProgressBar').removeClass('bg-info').addClass('bg-success');
+		// 			cloneJobId = null;
+		// 			clearTimeout(clonePollTimer);
+		// Swal.fire({
+		// 	position: 'top-end',
+		// 	icon: 'success',
+		// 	title: 'Clone Complete!',
+		// 	text: 'The GitHub project was cloned successfully.',
+		// 	confirmButtonText: 'OK'
+		// }).then(() => {
+		// 	location.reload();
+		// });
+		// 			applySwalDarkmode();
+		// 		} else {
+		// 			clonePollTimer = setTimeout(pollCloneProgress, 500); // Faster polling
+		// 		}
+		// 	}, 'json').fail(function () {
+		// 		$('#cloneLog').text('Waiting for clone process...');
+		// 		clonePollTimer = setTimeout(pollCloneProgress, 1000);
+		// 	});
+		// }
 
 		$('#cloneProjectForm').on('submit', function (e) {
 			e.preventDefault();
@@ -440,8 +474,8 @@ foreach (glob(__DIR__ . '/.clone_log_clone_*') as $logFile) {
 				return false;
 			}
 			$('#cloneProjectError').text('');
-			$('#cloneProgressArea').show();
-			$('#cloneProgressBar').removeClass('bg-success').addClass('bg-info').css('width', '0%').text('0%');
+			// $('#cloneProgressArea').show();
+			// $('#cloneProgressBar').removeClass('bg-success').addClass('bg-info').css('width', '0%').text('0%');
 			$('#cloneLog').text('');
 			Swal.fire({
 				title: 'Clone project?',
@@ -452,10 +486,21 @@ foreach (glob(__DIR__ . '/.clone_log_clone_*') as $logFile) {
 				cancelButtonText: 'Cancel'
 			}).then((result) => {
 				if (result.isConfirmed) {
+					showLoading('Cloning project...');
 					$.post('api.php', { cloneGithub: 1, githubUrl: url, cloneFolder: folder }, function (resp) {
 						if (resp.success && resp.jobId) {
-							cloneJobId = resp.jobId;
-							pollCloneProgress();
+							// cloneJobId = resp.jobId;
+							// pollCloneProgress();
+							hideLoading();
+							Swal.fire({
+								icon: 'success',
+								title: 'Clone Complete!',
+								text: 'The GitHub project was cloned successfully.',
+								confirmButtonText: 'OK'
+							}).then(() => {
+								location.reload();
+							});
+							applySwalDarkmode();
 						} else {
 							$('#cloneProjectError').text(resp.error || 'Clone failed.');
 							Swal.fire('Error', resp.error || 'Clone failed.', 'error');
