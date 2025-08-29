@@ -27,7 +27,11 @@ foreach (glob(__DIR__ . '/.clone_log_clone_*') as $logFile) {
 	<div class="dashboard-card shadow">
 		<div class="mb-4">
 			<div class="dashboard-title text-center"><i class="fa-solid fa-gauge-high"></i>DK Project Dashboard</div>
-			<div class="dashboard-desc text-center">Select a project to open</div>
+			<div class="dashboard-desc text-center">
+				<marquee behavior="scroll" direction="left" id="link-marquee">
+					Select a project to open
+				</marquee>
+			</div>
 
 			<div class="d-flex flex-column flex-md-row align-items-stretch justify-content-between gap-2 mt-4">
 				<input type="text" id="searchInput" class="form-control" placeholder="Search projects...">
@@ -38,6 +42,10 @@ foreach (glob(__DIR__ . '/.clone_log_clone_*') as $logFile) {
 				<button id="cloneProjectBtn" class="btn-clone-project">
 					<i class="fa-solid fa-plus"></i>
 					<span>Clone github Project</span>
+				</button>
+				<button id="manageLinksBtn" class="btn-clone-project">
+					<i class="fa-solid fa-link"></i>
+					<span>Manage Links</span>
 				</button>
 			</div>
 		</div>
@@ -111,6 +119,37 @@ foreach (glob(__DIR__ . '/.clone_log_clone_*') as $logFile) {
 			</div>
 		</div>
 
+		<div class="modal fade" id="manageLinksModal" tabindex="-1" aria-labelledby="manageLinksModalLabel" aria-hidden="true">
+			<div class="modal-dialog modal-lg modal-dialog-centered">
+				<div class="modal-content">
+					<div class="modal-header">
+						<h5 class="modal-title">Manage Links</h5>
+						<button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+					</div>
+					<div class="modal-body">
+						<table class="table table-bordered table-sm align-middle">
+							<thead>
+								<tr>
+									<th style="width:40%">URL</th>
+									<th style="width:40%">Label</th>
+									<th style="width:20%">Actions</th>
+								</tr>
+							</thead>
+							<tbody id="linksTableBody"></tbody>
+						</table>
+						<button class="btn btn-success btn-sm" id="addLinkBtn">
+							<i class="fa fa-plus"></i> Add Link
+						</button>
+						<div id="linkError" class="text-danger small mt-2"></div>
+					</div>
+					<div class="modal-footer">
+						<button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Close</button>
+						<button type="button" class="btn btn-primary" id="saveLinksBtn">Save Changes</button>
+					</div>
+				</div>
+			</div>
+		</div>
+
 		<div class="row row-cols-1 row-cols-sm-2 row-cols-md-3 g-3 mt-3" id="projectGrid">
 			<?php
 			$projects = [];
@@ -163,11 +202,12 @@ foreach (glob(__DIR__ . '/.clone_log_clone_*') as $logFile) {
 
 	<script>
 		<?php if (!empty($error)): ?>
-			$(function () {
+			$(function() {
 				$('#createProjectError').text(<?= json_encode($error) ?>);
 				new bootstrap.Modal(document.getElementById('createProjectModal')).show();
 			});
 		<?php endif; ?>
+
 		function applySwalDarkmode() {
 			if ($('body').hasClass('darkmode')) {
 				Swal.update({
@@ -203,16 +243,16 @@ foreach (glob(__DIR__ . '/.clone_log_clone_*') as $logFile) {
 			Swal.close();
 		}
 
-		$(function () {
+		$(function() {
 			const modal = new bootstrap.Modal(document.getElementById('createProjectModal'));
 
-			$('#createProjectBtn').on('click', function () {
+			$('#createProjectBtn').on('click', function() {
 				$('#projectName').val('');
 				$('#createProjectError').text('');
 				modal.show();
 			});
 
-			$('#createProjectForm').on('submit', function (e) {
+			$('#createProjectForm').on('submit', function(e) {
 				e.preventDefault();
 				const name = $('#projectName').val().trim();
 				if (!/^[A-Za-z0-9_\- ]{1,32}$/.test(name)) {
@@ -234,7 +274,9 @@ foreach (glob(__DIR__ . '/.clone_log_clone_*') as $logFile) {
 				}).then((result) => {
 					if (result.isConfirmed) {
 						showLoading('Creating project...');
-						$.post('api.php', { projectName: name }, function (resp) {
+						$.post('api.php', {
+							projectName: name
+						}, function(resp) {
 							hideLoading();
 							if (resp.success) {
 								Swal.fire('Created!', '', 'success').then(() => location.reload());
@@ -242,7 +284,7 @@ foreach (glob(__DIR__ . '/.clone_log_clone_*') as $logFile) {
 								Swal.fire('Error', resp.error || 'Failed to create project.', 'error');
 							}
 							applySwalDarkmode();
-						}, 'json').fail(function () {
+						}, 'json').fail(function() {
 							hideLoading();
 							Swal.fire('Error', 'Failed to create project.', 'error');
 							applySwalDarkmode();
@@ -252,9 +294,9 @@ foreach (glob(__DIR__ . '/.clone_log_clone_*') as $logFile) {
 				applySwalDarkmode();
 			});
 
-			$('#searchInput').on('input', function () {
+			$('#searchInput').on('input', function() {
 				const query = $(this).val().toLowerCase();
-				$('#projectGrid a.project-link').each(function () {
+				$('#projectGrid a.project-link').each(function() {
 					const name = $(this).data('name').toLowerCase();
 					$(this).closest('.col').toggle(name.includes(query));
 				});
@@ -273,7 +315,7 @@ foreach (glob(__DIR__ . '/.clone_log_clone_*') as $logFile) {
 				applySwalDarkmode();
 			}
 
-			$('#darkmodeToggle').on('click', function () {
+			$('#darkmodeToggle').on('click', function() {
 				setDarkmode(!$('body').hasClass('darkmode'));
 			});
 
@@ -284,7 +326,7 @@ foreach (glob(__DIR__ . '/.clone_log_clone_*') as $logFile) {
 				applySwalDarkmode();
 			}
 
-			$('.edit-project-btn').on('click', function () {
+			$('.edit-project-btn').on('click', function() {
 				const oldName = $(this).data('folder');
 				Swal.fire({
 					title: 'Edit Project Name',
@@ -312,7 +354,11 @@ foreach (glob(__DIR__ . '/.clone_log_clone_*') as $logFile) {
 				}).then((result) => {
 					if (result.isConfirmed) {
 						showLoading('Renaming project...');
-						$.post('api.php', { renameProject: 1, oldName: oldName, newName: result.value }, function (resp) {
+						$.post('api.php', {
+							renameProject: 1,
+							oldName: oldName,
+							newName: result.value
+						}, function(resp) {
 							hideLoading();
 							if (resp.success) {
 								Swal.fire('Renamed!', '', 'success').then(() => location.reload());
@@ -321,7 +367,7 @@ foreach (glob(__DIR__ . '/.clone_log_clone_*') as $logFile) {
 								Swal.fire('Error', resp.error || 'Failed to rename folder.', 'error');
 								applySwalDarkmode();
 							}
-						}, 'json').fail(function () {
+						}, 'json').fail(function() {
 							hideLoading();
 							Swal.fire('Error', 'Failed to rename folder.', 'error');
 							applySwalDarkmode();
@@ -331,7 +377,7 @@ foreach (glob(__DIR__ . '/.clone_log_clone_*') as $logFile) {
 				applySwalDarkmode();
 			});
 
-			$('.delete-project-btn').on('click', function () {
+			$('.delete-project-btn').on('click', function() {
 				const name = $(this).data('folder');
 				Swal.fire({
 					title: 'Delete Project?',
@@ -344,7 +390,10 @@ foreach (glob(__DIR__ . '/.clone_log_clone_*') as $logFile) {
 				}).then((result) => {
 					if (result.isConfirmed) {
 						showLoading('Deleting project...');
-						$.post('api.php', { deleteProject: 1, name: name }, function (resp) {
+						$.post('api.php', {
+							deleteProject: 1,
+							name: name
+						}, function(resp) {
 							hideLoading();
 							if (resp.success) {
 								Swal.fire('Deleted!', '', 'success').then(() => location.reload());
@@ -353,7 +402,7 @@ foreach (glob(__DIR__ . '/.clone_log_clone_*') as $logFile) {
 								Swal.fire('Error', resp.error || 'Failed to delete folder.', 'error');
 								applySwalDarkmode();
 							}
-						}, 'json').fail(function () {
+						}, 'json').fail(function() {
 							hideLoading();
 							Swal.fire('Error', 'Failed to delete folder.', 'error');
 							applySwalDarkmode();
@@ -372,8 +421,10 @@ foreach (glob(__DIR__ . '/.clone_log_clone_*') as $logFile) {
 				method: 'GET',
 				dataType: 'json',
 				timeout: 3000,
-				headers: { 'X-Api-Key': 'vqtdn5h8Bc9o2ujlg6GboQ==5mItNDgsfYQBz9lc' },
-				success: function (resp) {
+				headers: {
+					'X-Api-Key': 'vqtdn5h8Bc9o2ujlg6GboQ==5mItNDgsfYQBz9lc'
+				},
+				success: function(resp) {
 					if (resp && resp.datetime) {
 						lastWorldTime = new Date(resp.datetime.replace(' ', 'T'));
 						lastWorldTimeTs = Date.now();
@@ -382,7 +433,7 @@ foreach (glob(__DIR__ . '/.clone_log_clone_*') as $logFile) {
 						updateClockLocal();
 					}
 				},
-				error: function () {
+				error: function() {
 					updateClockLocal();
 				}
 			});
@@ -408,9 +459,9 @@ foreach (glob(__DIR__ . '/.clone_log_clone_*') as $logFile) {
 			$('#realtimeClock').text(`${date} ${time} (local)`);
 		}
 
-		$(function () {
+		$(function() {
 			fetchWorldClock();
-			setInterval(function () {
+			setInterval(function() {
 				if (lastWorldTime) {
 					updateClockDisplay();
 				} else {
@@ -422,7 +473,7 @@ foreach (glob(__DIR__ . '/.clone_log_clone_*') as $logFile) {
 
 		const cloneModal = new bootstrap.Modal(document.getElementById('cloneProjectModal'));
 
-		$('#cloneProjectBtn').on('click', function () {
+		$('#cloneProjectBtn').on('click', function() {
 			$('#githubUrl').val('');
 			$('#cloneFolder').val('');
 			$('#cloneProjectError').text('');
@@ -461,7 +512,7 @@ foreach (glob(__DIR__ . '/.clone_log_clone_*') as $logFile) {
 		// 	});
 		// }
 
-		$('#cloneProjectForm').on('submit', function (e) {
+		$('#cloneProjectForm').on('submit', function(e) {
 			e.preventDefault();
 			const url = $('#githubUrl').val().trim();
 			const folder = $('#cloneFolder').val().trim();
@@ -487,7 +538,11 @@ foreach (glob(__DIR__ . '/.clone_log_clone_*') as $logFile) {
 			}).then((result) => {
 				if (result.isConfirmed) {
 					showLoading('Cloning project...');
-					$.post('api.php', { cloneGithub: 1, githubUrl: url, cloneFolder: folder }, function (resp) {
+					$.post('api.php', {
+						cloneGithub: 1,
+						githubUrl: url,
+						cloneFolder: folder
+					}, function(resp) {
 						if (resp.success && resp.jobId) {
 							// cloneJobId = resp.jobId;
 							// pollCloneProgress();
@@ -510,6 +565,112 @@ foreach (glob(__DIR__ . '/.clone_log_clone_*') as $logFile) {
 				}
 			});
 			applySwalDarkmode();
+		});
+
+		$(function() {
+			$.get("link.txt", function(data) {
+				let lines = data.trim().split("\n").filter(line => line.trim() !== "");
+
+				if (lines.length === 0) {
+					$("#link-marquee").text("Select a project to open");
+				} else {
+					let html = "";
+					$.each(lines, function(i, line) {
+						let parts = line.split("|");
+						let url = parts[0].trim();
+						let name = parts[1] ? parts[1].trim() : url;
+						html += `<a href="${url}" target="_blank">${name}</a>`;
+					});
+					$("#link-marquee").html(html);
+				}
+			}).fail(function() {
+				$("#link-marquee").text("Select a project to open");
+			});
+		});
+
+		const linksModal = new bootstrap.Modal(document.getElementById('manageLinksModal'));
+
+		$('#manageLinksBtn').on('click', function() {
+			loadLinks();
+			$('#linkError').text('');
+			linksModal.show();
+		});
+
+		function loadLinks() {
+			$.get("link.txt", function(data) {
+				let lines = data.trim().split("\n").filter(line => line.trim() !== "");
+				let tbody = $("#linksTableBody");
+				tbody.empty();
+
+				if (lines.length === 0) {
+					tbody.append('<tr><td colspan="3" class="text-center text-muted">No links available</td></tr>');
+				} else {
+					$.each(lines, function(i, line) {
+						let parts = line.split("|");
+						let url = parts[0].trim();
+						let label = parts[1] ? parts[1].trim() : url;
+						tbody.append(`
+          <tr>
+            <td><input type="text" class="form-control form-control-sm link-url" value="${url}"></td>
+            <td><input type="text" class="form-control form-control-sm link-label" value="${label}"></td>
+            <td>
+              <button class="btn btn-danger btn-sm remove-link"><i class="fa fa-trash"></i></button>
+            </td>
+          </tr>
+        `);
+					});
+				}
+			});
+		}
+
+		$('#addLinkBtn').on('click', function() {
+			$("#linksTableBody").append(`
+    <tr>
+      <td><input type="text" class="form-control form-control-sm link-url" placeholder="https://example.com"></td>
+      <td><input type="text" class="form-control form-control-sm link-label" placeholder="My Project"></td>
+      <td>
+        <button class="btn btn-danger btn-sm remove-link"><i class="fa fa-trash"></i></button>
+      </td>
+    </tr>
+  `);
+		});
+
+		$(document).on('click', '.remove-link', function() {
+			$(this).closest('tr').remove();
+		});
+
+		$('#saveLinksBtn').on('click', function() {
+			let rows = [];
+			let error = false;
+			$("#linksTableBody tr").each(function() {
+				let url = $(this).find(".link-url").val().trim();
+				let label = $(this).find(".link-label").val().trim();
+				if (url !== "") {
+					if (!/^https?:\/\/.+/i.test(url)) {
+						$('#linkError').text("Invalid URL: " + url);
+						error = true;
+						return false;
+					}
+					rows.push(url + "|" + (label || url));
+				}
+			});
+			if (error) return;
+
+			$.post("api.php", {
+				saveLinks: 1,
+				links: rows
+			}, function(resp) {
+				if (resp.success) {
+					Swal.fire("Saved!", "Links updated successfully", "success").then(() => {
+						linksModal.hide();
+						location.reload();
+					});
+				} else {
+					$('#linkError').text(resp.error || "Failed to save links.");
+				}
+			}, "json").fail(function() {
+				$('#linkError').text("Failed to save links.");
+			});
 		});
 	</script>
 </body>

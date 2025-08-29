@@ -370,3 +370,17 @@ body:not(.darkmode) #realtimeClock {
 	box-shadow: 0 2px 8px rgba(0, 0, 0, 0.08);
 	border: 1px solid #e0e0e0;
 }
+
+#link-marquee a {
+  text-decoration: none;
+  color: #007bff;
+  font-weight: bold;
+  margin-right: 40px;
+  transition: color 0.3s;
+  font-style: normal;
+}
+
+#link-marquee a:hover {
+  color: #ff6600;
+  text-decoration: underline;
+}

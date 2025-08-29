@@ -1,0 +1,2 @@
+https://google.com|Google
+http://localhost:8000|Erpro

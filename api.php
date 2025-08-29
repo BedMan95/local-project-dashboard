@@ -213,4 +213,16 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
         echo json_encode(['log' => $log, 'percent' => $percent, 'done' => $done]);
         exit;
     }
+
+    if (isset($_POST['saveLinks'])) {
+        $links = isset($_POST['links']) ? $_POST['links'] : array();
+        $file = __DIR__ . "/link.txt";
+        $content = implode("\n", array_map("trim", $links));
+        if (file_put_contents($file, $content) !== false) {
+            echo json_encode(["success" => true]);
+        } else {
+            echo json_encode(["success" => false, "error" => "Cannot write file"]);
+        }
+        exit;
+    }
 }
