@@ -35,13 +35,13 @@ foreach (glob(__DIR__ . '/.clone_log_clone_*') as $logFile) {
 
 			<div class="d-flex flex-column flex-md-row align-items-stretch justify-content-between gap-2 mt-4">
 				<input type="text" id="searchInput" class="form-control" placeholder="Search projects...">
-				<button id="createProjectBtn" class="btn-create-project">
+				<button id="createProjectBtn" class="btn-clone-project">
 					<i class="fa-solid fa-plus"></i>
 					<span>Create Project</span>
 				</button>
 				<button id="cloneProjectBtn" class="btn-clone-project">
 					<i class="fa-solid fa-plus"></i>
-					<span>Clone github Project</span>
+					<span>Github Project</span>
 				</button>
 				<button id="manageLinksBtn" class="btn-clone-project">
 					<i class="fa-solid fa-link"></i>
