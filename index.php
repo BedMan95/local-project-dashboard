@@ -127,12 +127,12 @@ foreach (glob(__DIR__ . '/.clone_log_clone_*') as $logFile) {
 						<button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
 					</div>
 					<div class="modal-body">
-						<table class="table table-bordered table-sm align-middle">
+						<table class="table table-sm align-middle">
 							<thead>
 								<tr>
-									<th style="width:40%">URL</th>
-									<th style="width:40%">Label</th>
-									<th style="width:20%">Actions</th>
+									<th style="width:45%">URL</th>
+									<th style="width:45%">Label</th>
+									<th >Actions</th>
 								</tr>
 							</thead>
 							<tbody id="linksTableBody"></tbody>
@@ -217,6 +217,7 @@ foreach (glob(__DIR__ . '/.clone_log_clone_*') as $logFile) {
 						popup: 'swal2-darkmode'
 					}
 				});
+				$('table').addClass('table-dark');
 			} else {
 				Swal.update({
 					background: '',
@@ -225,6 +226,7 @@ foreach (glob(__DIR__ . '/.clone_log_clone_*') as $logFile) {
 						popup: ''
 					}
 				});
+				$('table').removeClass('table-dark');
 			}
 		}
 
