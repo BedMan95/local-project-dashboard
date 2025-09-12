@@ -1,7 +1,7 @@
 <?php
-foreach (glob(__DIR__ . '/.clone_log_clone_*') as $logFile) {
-	@unlink($logFile);
-}
+    foreach (glob(__DIR__ . '/.clone_log_clone_*') as $logFile) {
+        @unlink($logFile);
+    }
 ?>
 <!DOCTYPE html>
 <html lang="en">
@@ -16,6 +16,8 @@ foreach (glob(__DIR__ . '/.clone_log_clone_*') as $logFile) {
 	<script src="https://cdn.jsdelivr.net/npm/sweetalert2@11"></script>
 	<script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.2/dist/js/bootstrap.bundle.min.js"></script>
 	<link href="style.css" rel="stylesheet">
+	<!-- Monaco Editor CDN -->
+	<script src="https://cdnjs.cloudflare.com/ajax/libs/monaco-editor/0.45.0/min/vs/loader.min.js"></script>
 </head>
 
 <body>
@@ -152,58 +154,76 @@ foreach (glob(__DIR__ . '/.clone_log_clone_*') as $logFile) {
 
 		<div class="row row-cols-1 row-cols-sm-2 row-cols-md-3 g-3 mt-3" id="projectGrid">
 			<?php
-			$projects = [];
-			$files = scandir(__DIR__);
-			foreach ($files as $file) {
-				if (is_dir($file) && $file != '.' && $file != '..') {
-					$filesInDir = scandir($file);
-					$existIndex = in_array('index.php', $filesInDir) || in_array('index.html', $filesInDir);
-					if ($existIndex) {
-						$link = file_exists("$file/index.php") ? "$file/index.php" : "$file/index.html";
-						$projects[] = ['name' => $file, 'link' => $link];
-					} else {
-						foreach ($filesInDir as $subDir) {
-							$subDirPath = "{$file}/{$subDir}";
-							if (is_dir($subDirPath) && $subDir != '.' && $subDir != '..') {
-								$subFiles = scandir($subDirPath);
-								if (in_array('index.php', $subFiles) || in_array('index.html', $subFiles)) {
-									$link = file_exists("$subDirPath/index.php") ? "$subDirPath/index.php" : "$subDirPath/index.html";
-									$projects[] = ['name' => $subDirPath, 'link' => $link];
-								}
-							}
-						}
-					}
-				}
-			}
-			foreach ($projects as $proj) {
-				$name = htmlspecialchars($proj['name']);
-				$link = htmlspecialchars($proj['link']);
-				echo "<div class='col'>
+                $projects = [];
+                $files    = scandir(__DIR__);
+                foreach ($files as $file) {
+                    if (is_dir($file) && $file != '.' && $file != '..') {
+                        $filesInDir = scandir($file);
+                        $existIndex = in_array('index.php', $filesInDir) || in_array('index.html', $filesInDir);
+                        if ($existIndex) {
+                            $link       = file_exists("$file/index.php") ? "$file/index.php" : "$file/index.html";
+                            $projects[] = ['name' => $file, 'link' => $link];
+                        } else {
+                            foreach ($filesInDir as $subDir) {
+                                $subDirPath = "{$file}/{$subDir}";
+                                if (is_dir($subDirPath) && $subDir != '.' && $subDir != '..') {
+                                    $subFiles = scandir($subDirPath);
+                                    if (in_array('index.php', $subFiles) || in_array('index.html', $subFiles)) {
+                                        $link       = file_exists("$subDirPath/index.php") ? "$subDirPath/index.php" : "$subDirPath/index.html";
+                                        $projects[] = ['name' => $subDirPath, 'link' => $link];
+                                    }
+                                }
+                            }
+                        }
+                    }
+                }
+                foreach ($projects as $proj) {
+                    $name = htmlspecialchars($proj['name']);
+                    $link = htmlspecialchars($proj['link']);
+                    echo "<div class='col'>
 						<div class='d-flex align-items-stretch h-100 project-folder'>
 							<a class='project-link flex-grow-1' href='$link' data-name='$name' target='_blank' rel='noopener'>
 								<span class='folder-icon'><i class='fa-solid fa-folder'></i></span>
 								<span>$name</span>
 							</a>
 							<div class='d-flex flex-column ms-2 justify-content-center action-buttons'>
-								<button class='btn btn-sm btn-outline-secondary mb-1 edit-project-btn' data-folder='$name' title='Edit name'>
+								<button class='btn btn-sm btn-outline-secondary mb-1 edit-project-btn' data-folder='$name' title='Edit Project'>
 									<i class='fa fa-edit'></i>
 								</button>
-								<button class='btn btn-sm btn-outline-danger delete-project-btn' data-folder='$name' title='Delete project'>
+								<button class='btn btn-sm btn-outline-danger delete-project-btn' data-folder='$name' title='Delete Project'>
 									<i class='fa fa-trash'></i>
 								</button>
 							</div>
 						</div>
 					</div>";
-			}
-			?>
+                }
+            ?>
 		</div>
 	</div>
 	<div id="realtimeClock"></div>
 
+	<!-- Modal -->
+	<div id="editorModal" style="display:none; position:fixed; top:5%; left:5%; 
+		width:70%; height:90%; background:#1e1e1e; border-radius:10px; box-shadow:0 0 20px #000; z-index:9999;">
+		<div style="height:100%; display:flex; flex-direction:column;">
+			<!-- Header -->
+			<div style="padding:10px; background:#333; color:#fff; display:flex; justify-content:space-between; align-items:center;">
+				<span id="editorFilename"></span>
+				<button onclick="closeEditor()" style="background:#e74c3c;color:#fff;border:none;padding:5px 10px;cursor:pointer;">✕</button>
+			</div>
+			<!-- Editor Container -->
+			<div id="monacoEditor" style="flex:1;"></div>
+			<!-- Footer -->
+			<div style="padding:10px; background:#333; text-align:right;">
+				<button onclick="saveFile()" style="background:#2ecc71;color:#fff;border:none;padding:5px 10px;cursor:pointer;">💾 Save</button>
+			</div>
+		</div>
+	</div>
+
 	<script>
-		<?php if (!empty($error)): ?>
+		<?php if (! empty($error)): ?>
 			$(function() {
-				$('#createProjectError').text(<?= json_encode($error) ?>);
+				$('#createProjectError').text(<?php echo json_encode($error) ?>);
 				new bootstrap.Modal(document.getElementById('createProjectModal')).show();
 			});
 		<?php endif; ?>
@@ -218,6 +238,11 @@ foreach (glob(__DIR__ . '/.clone_log_clone_*') as $logFile) {
 					}
 				});
 				$('table').addClass('table-dark');
+				$('.swal2-select').css({
+					'background-color': '#2c2f36',
+					'color': '#e0e0e0',
+					'border': '1px solid #444'
+				});
 			} else {
 				Swal.update({
 					background: '',
@@ -227,6 +252,11 @@ foreach (glob(__DIR__ . '/.clone_log_clone_*') as $logFile) {
 					}
 				});
 				$('table').removeClass('table-dark');
+				$('.swal2-select').css({
+					'background-color': '',
+					'color': '',
+					'border': ''
+				});
 			}
 		}
 
@@ -328,55 +358,243 @@ foreach (glob(__DIR__ . '/.clone_log_clone_*') as $logFile) {
 				applySwalDarkmode();
 			}
 
-			$('.edit-project-btn').on('click', function() {
-				const oldName = $(this).data('folder');
+			$('.edit-project-btn').on('click', function () {
+				const folder = $(this).data('folder');
+
 				Swal.fire({
-					title: 'Edit Project Name',
-					input: 'text',
-					inputValue: oldName,
-					inputAttributes: {
-						maxlength: 32,
-						autocapitalize: 'off',
-						autocorrect: 'off'
+					title: 'Select Edit Mode',
+					input: 'select',
+					inputOptions: {
+						name: 'Edit Project Name',
+						file: 'Edit Project Files'
 					},
-					showCancelButton: true,
-					confirmButtonText: 'Rename',
-					cancelButtonText: 'Cancel',
-					preConfirm: (newName) => {
-						if (!/^[A-Za-z0-9_\- ]{1,32}$/.test(newName)) {
-							Swal.showValidationMessage('Allowed: letters, numbers, spaces, -, _ (max 32 chars)');
-							return false;
-						}
-						if (newName === oldName) {
-							Swal.showValidationMessage('Name is unchanged.');
-							return false;
-						}
-						return newName;
-					}
-				}).then((result) => {
-					if (result.isConfirmed) {
-						showLoading('Renaming project...');
-						$.post('api.php', {
-							renameProject: 1,
-							oldName: oldName,
-							newName: result.value
-						}, function(resp) {
-							hideLoading();
-							if (resp.success) {
-								Swal.fire('Renamed!', '', 'success').then(() => location.reload());
-								applySwalDarkmode();
-							} else {
-								Swal.fire('Error', resp.error || 'Failed to rename folder.', 'error');
-								applySwalDarkmode();
+					inputPlaceholder: 'Choose mode',
+					showCancelButton: true
+				}).then((choice) => {
+					if (!choice.isConfirmed) return;
+
+					if (choice.value === 'name') {
+						// ==== EDIT NAME ====
+						Swal.fire({
+							title: 'Edit Project Name',
+							input: 'text',
+							inputValue: folder,
+							inputAttributes: {
+								maxlength: 32,
+								autocapitalize: 'off',
+								autocorrect: 'off'
+							},
+							showCancelButton: true,
+							confirmButtonText: 'Rename',
+							cancelButtonText: 'Cancel',
+							preConfirm: (newName) => {
+								if (!/^[A-Za-z0-9_\- ]{1,32}$/.test(newName)) {
+									Swal.showValidationMessage('Allowed: letters, numbers, spaces, -, _ (max 32 chars)');
+									return false;
+								}
+								if (newName === folder) {
+									Swal.showValidationMessage('Name is unchanged.');
+									return false;
+								}
+								return newName;
 							}
-						}, 'json').fail(function() {
+						}).then((result) => {
+							if (result.isConfirmed) {
+								showLoading('Renaming project...');
+								$.post('api.php', {
+									renameProject: 1,
+									oldName: folder,
+									newName: result.value
+								}, function (resp) {
+									hideLoading();
+									if (resp.success) {
+										Swal.fire('Renamed!', '', 'success').then(() => location.reload());
+										applySwalDarkmode();
+									} else {
+										Swal.fire('Error', resp.error || 'Failed to rename folder.', 'error');
+										applySwalDarkmode();
+									}
+								}, 'json').fail(function () {
+									hideLoading();
+									Swal.fire('Error', 'Failed to rename folder.', 'error');
+									applySwalDarkmode();
+								});
+							}
+						});
+						applySwalDarkmode();
+					} else if (choice.value === 'file') {
+						// ==== EDIT FILE ====
+						showLoading('Loading directory...');
+						$.getJSON('api.php', { listFiles: 1, folder: folder }, function (resp) {
 							hideLoading();
-							Swal.fire('Error', 'Failed to rename folder.', 'error');
+							if (!resp.success) {
+								Swal.fire('Error', resp.error || 'Failed to load files.', 'error');
+								applySwalDarkmode();
+								return;
+							}
+
+							let fileListHtml = `
+								<div class="mb-2 d-flex justify-content-end gap-2">
+									<button class="btn btn-sm btn-primary create-file-btn" data-folder="${folder}">
+										<i class="fa fa-file"></i> New File
+									</button>
+									<button class="btn btn-sm btn-success create-folder-btn" data-folder="${folder}">
+										<i class="fa fa-folder"></i> New Folder
+									</button>
+								</div>
+								<div class="file-grid"
+									style="display:grid;grid-template-columns:repeat(auto-fill,minmax(150px,1fr));gap:10px;">`;
+
+							$.each(resp.entries, function (i, entry) {
+								if (entry.type === 'dir') {
+									fileListHtml += `
+										<button class="file-item swal2-styled bg-secondary"
+												data-path="${entry.path}" data-type="dir">
+											<i class="fa fa-folder me-1"></i> ${entry.name}
+										</button>`;
+								} else {
+									fileListHtml += `
+										<button class="file-item swal2-styled"
+												data-path="${entry.path}" data-type="file">
+											<i class="fa fa-file-code me-1"></i> ${entry.name}
+										</button>`;
+								}
+							});
+							fileListHtml += '</div>';
+
+							Swal.fire({
+								title: 'Browsing: ' + folder,
+								html: fileListHtml,
+								width: '80%',
+								showCancelButton: true,
+								showConfirmButton: false
+							});
 							applySwalDarkmode();
 						});
 					}
 				});
 				applySwalDarkmode();
+			});
+
+			function openFolder(folder) {
+				showLoading('Loading directory...');
+				$.getJSON('api.php', { listFiles: 1, folder: folder }, function (resp) {
+					hideLoading();
+					if (!resp.success) {
+						Swal.fire('Error', resp.error || 'Failed to load files.', 'error');
+						applySwalDarkmode();
+						return;
+					}
+
+					let fileListHtml = `
+						<div class="mb-2 d-flex justify-content-end gap-2">
+							<button class="btn btn-sm btn-primary create-file-btn" data-folder="${folder}">
+								<i class="fa fa-file"></i> New File
+							</button>
+							<button class="btn btn-sm btn-success create-folder-btn" data-folder="${folder}">
+								<i class="fa fa-folder"></i> New Folder
+							</button>
+						</div>
+						<div class="file-grid"
+							style="display:grid;grid-template-columns:repeat(auto-fill,minmax(150px,1fr));gap:10px;">`;
+
+					$.each(resp.entries, function (i, entry) {
+						if (entry.type === 'dir') {
+							fileListHtml += `
+								<button class="file-item swal2-styled bg-secondary"
+										data-path="${entry.path}" data-type="dir">
+									<i class="fa fa-folder me-1"></i> ${entry.name}
+								</button>`;
+						} else {
+							fileListHtml += `
+								<button class="file-item swal2-styled"
+										data-path="${entry.path}" data-type="file">
+									<i class="fa fa-file-code me-1"></i> ${entry.name}
+								</button>`;
+						}
+					});
+					fileListHtml += '</div>';
+
+					Swal.fire({
+						title: 'Browsing: ' + folder,
+						html: fileListHtml,
+						width: '90%',
+						showCancelButton: true,
+						showConfirmButton: false
+					});
+					applySwalDarkmode();
+				});
+			}
+
+			$(document).on('click', '.file-item', function () {
+				let path = $(this).data('path');
+				let type = $(this).data('type');
+				if (type === 'dir') {
+					openFolder(path);
+				} else if (type === "file") {
+						$.getJSON("api.php", { getFile: 1, folder: path.split("/").slice(0, -1).join("/"), file: path.split("/").pop() }, function(resp) {
+							if (resp.success) {
+								// deteksi bahasa berdasarkan ekstensi
+								let ext = path.split(".").pop();
+								let lang = "plaintext";
+								if (ext === "php") lang = "php";
+								if (ext === "js") lang = "javascript";
+								if (ext === "css") lang = "css";
+								if (ext === "html") lang = "html";
+								if (ext === "py") lang = "python";
+
+								openFileInEditor(path, resp.content, lang);
+							} else {
+								alert("Error: " + resp.error);
+							}
+						});
+					}
+			});
+
+			// === tombol new file ===
+			$(document).on('click', '.create-file-btn', function () {
+				const folder = $(this).data('folder');
+				Swal.fire({
+					title: 'New File',
+					input: 'text',
+					inputPlaceholder: 'example.txt',
+					showCancelButton: true,
+					confirmButtonText: 'Create',
+					preConfirm: (val) => val.trim()
+				}).then((res) => {
+					if (!res.isConfirmed) return;
+					$.post('api.php', { createFile: 1, folder: folder, name: res.value }, function (resp) {
+						if (resp.success) {
+							openFolder(folder);
+						} else {
+							Swal.fire('Error', resp.error || 'Failed to create file.', 'error');
+						}
+						applySwalDarkmode();
+					}, 'json');
+				});
+			});
+
+			// === tombol new folder ===
+			$(document).on('click', '.create-folder-btn', function () {
+				const folder = $(this).data('folder');
+				Swal.fire({
+					title: 'New Folder',
+					input: 'text',
+					inputPlaceholder: 'new-folder',
+					showCancelButton: true,
+					confirmButtonText: 'Create',
+					preConfirm: (val) => val.trim()
+				}).then((res) => {
+					if (!res.isConfirmed) return;
+					$.post('api.php', { createFolder: 1, folder: folder, name: res.value }, function (resp) {
+						if (resp.success) {
+							openFolder(folder);
+						} else {
+							Swal.fire('Error', resp.error || 'Failed to create folder.', 'error');
+						}
+						applySwalDarkmode();
+					}, 'json');
+				});
 			});
 
 			$('.delete-project-btn').on('click', function() {
@@ -482,38 +700,6 @@ foreach (glob(__DIR__ . '/.clone_log_clone_*') as $logFile) {
 			cloneModal.show();
 		});
 
-		// let cloneJobId = null;
-		// let clonePollTimer = null;
-
-		// function pollCloneProgress() {
-		// 	if (!cloneJobId) return;
-		// 	$.post('api.php', { cloneProgress: 1, jobId: cloneJobId, cloneFolder: $('#cloneFolder').val().trim() }, function (resp) {
-		// 		$('#cloneProgressArea').show();
-		// 		$('#cloneLog').text(resp.log && resp.log.length > 0 ? resp.log : 'Starting clone...');
-		// 		$('#cloneProgressBar').css('width', resp.percent + '%').text(resp.percent + '%');
-		// 		if (resp.done) {
-		// 			$('#cloneProgressBar').removeClass('bg-info').addClass('bg-success');
-		// 			cloneJobId = null;
-		// 			clearTimeout(clonePollTimer);
-		// Swal.fire({
-		// 	position: 'top-end',
-		// 	icon: 'success',
-		// 	title: 'Clone Complete!',
-		// 	text: 'The GitHub project was cloned successfully.',
-		// 	confirmButtonText: 'OK'
-		// }).then(() => {
-		// 	location.reload();
-		// });
-		// 			applySwalDarkmode();
-		// 		} else {
-		// 			clonePollTimer = setTimeout(pollCloneProgress, 500); // Faster polling
-		// 		}
-		// 	}, 'json').fail(function () {
-		// 		$('#cloneLog').text('Waiting for clone process...');
-		// 		clonePollTimer = setTimeout(pollCloneProgress, 1000);
-		// 	});
-		// }
-
 		$('#cloneProjectForm').on('submit', function(e) {
 			e.preventDefault();
 			const url = $('#githubUrl').val().trim();
@@ -527,8 +713,6 @@ foreach (glob(__DIR__ . '/.clone_log_clone_*') as $logFile) {
 				return false;
 			}
 			$('#cloneProjectError').text('');
-			// $('#cloneProgressArea').show();
-			// $('#cloneProgressBar').removeClass('bg-success').addClass('bg-info').css('width', '0%').text('0%');
 			$('#cloneLog').text('');
 			Swal.fire({
 				title: 'Clone project?',
@@ -546,8 +730,6 @@ foreach (glob(__DIR__ . '/.clone_log_clone_*') as $logFile) {
 						cloneFolder: folder
 					}, function(resp) {
 						if (resp.success && resp.jobId) {
-							// cloneJobId = resp.jobId;
-							// pollCloneProgress();
 							hideLoading();
 							Swal.fire({
 								icon: 'success',
@@ -674,6 +856,67 @@ foreach (glob(__DIR__ . '/.clone_log_clone_*') as $logFile) {
 				$('#linkError').text("Failed to save links.");
 			});
 		});
+
+		let editorInstance;
+		let currentFilePath = "";
+
+		require.config({ paths: { 'vs': 'https://cdnjs.cloudflare.com/ajax/libs/monaco-editor/0.45.0/min/vs' }});
+		require(["vs/editor/editor.main"], function () {
+			editorInstance = monaco.editor.create(document.getElementById('monacoEditor'), {
+				value: "// Pilih file untuk mulai mengedit...",
+				language: "php", // default PHP
+				theme: "vs-dark",
+				automaticLayout: true
+			});
+		});
+
+		// buka file di modal
+		function openFileInEditor(path, content, language="php") {
+			currentFilePath = path;
+			document.getElementById("editorFilename").innerText = path;
+			editorInstance.setValue(content);
+			monaco.editor.setModelLanguage(editorInstance.getModel(), language);
+
+			document.getElementById("editorModal").style.display = "block";
+		}
+
+		// tutup editor
+		function closeEditor() {
+			document.getElementById("editorModal").style.display = "none";
+		}
+
+		// simpan file via AJAX
+		function saveFile() {
+			const content = editorInstance.getValue();
+			$.post("api.php", {
+				saveFile: 1,
+				folder: currentFilePath.split("/").slice(0, -1).join("/"),
+				file: currentFilePath.split("/").pop(),
+				content: content
+			}, function(resp) {
+				if (resp.success) {
+					Swal.fire({
+						toast: true,
+						position: 'top-end',
+						icon: 'success',
+						title: 'File saved!',
+						showConfirmButton: false,
+						timer: 2000,
+					});
+					applySwalDarkmode();
+				} else {
+					Swal.fire({
+						toast: true,
+						position: 'top-end',
+						icon: 'error',
+						title: resp.error || "Save failed",
+						showConfirmButton: false,
+						timer: 3000,
+					});
+					applySwalDarkmode();
+				}
+			}, "json");
+		}
 	</script>
 </body>
 

@@ -6,10 +6,12 @@ function rrmdir($dir)
         foreach ($objects as $object) {
             if ($object != "." && $object != "..") {
                 $path = $dir . "/" . $object;
-                if (is_dir($path))
+                if (is_dir($path)) {
                     rrmdir($path);
-                else
+                } else {
                     @unlink($path);
+                }
+
             }
         }
         @rmdir($dir);
@@ -21,7 +23,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
     if (isset($_POST['projectName'])) {
         header('Content-Type: application/json');
         $projectName = trim($_POST['projectName']);
-        if (!preg_match('/^[A-Za-z0-9_\- ]{1,32}$/', $projectName)) {
+        if (! preg_match('/^[A-Za-z0-9_\- ]{1,32}$/', $projectName)) {
             echo json_encode(['success' => false, 'error' => 'Invalid project name.']);
             exit;
         }
@@ -30,7 +32,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
             echo json_encode(['success' => false, 'error' => 'Project already exists.']);
             exit;
         }
-        if (!mkdir($dir, 0755, true)) {
+        if (! mkdir($dir, 0755, true)) {
             echo json_encode(['success' => false, 'error' => 'Failed to create project directory.']);
             exit;
         }
@@ -40,7 +42,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
             exit;
         }
         // Add to .gitignore if not already present
-        $gitignore = __DIR__ . '/.gitignore';
+        $gitignore      = __DIR__ . '/.gitignore';
         $alreadyIgnored = false;
         if (file_exists($gitignore)) {
             $lines = file($gitignore, FILE_IGNORE_NEW_LINES | FILE_SKIP_EMPTY_LINES);
@@ -51,7 +53,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
                 }
             }
         }
-        if (!$alreadyIgnored) {
+        if (! $alreadyIgnored) {
             file_put_contents($gitignore, $projectName . "\n", FILE_APPEND | LOCK_EX);
         }
         echo json_encode(['success' => true]);
@@ -62,11 +64,11 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
     if (isset($_POST['renameProject'])) {
         $old = trim($_POST['oldName']);
         $new = trim($_POST['newName']);
-        if (!preg_match('/^[A-Za-z0-9_\- ]{1,32}$/', $new)) {
+        if (! preg_match('/^[A-Za-z0-9_\- ]{1,32}$/', $new)) {
             echo json_encode(['success' => false, 'error' => 'Invalid new name.']);
             exit;
         }
-        if (!is_dir($old)) {
+        if (! is_dir($old)) {
             echo json_encode(['success' => false, 'error' => 'Original folder not found.']);
             exit;
         }
@@ -77,7 +79,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
         if (rename($old, $new)) {
             // Update .gitignore: remove old, add new
             $gitignore = __DIR__ . '/.gitignore';
-            $lines = [];
+            $lines     = [];
             if (file_exists($gitignore)) {
                 $lines = file($gitignore, FILE_IGNORE_NEW_LINES | FILE_SKIP_EMPTY_LINES);
                 // Remove old name
@@ -86,7 +88,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
                 });
             }
             // Add new name if not present
-            if (!in_array($new, $lines)) {
+            if (! in_array($new, $lines)) {
                 $lines[] = $new;
             }
             file_put_contents($gitignore, implode("\n", $lines) . "\n", LOCK_EX);
@@ -100,7 +102,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
     // Delete project
     if (isset($_POST['deleteProject'])) {
         $target = trim($_POST['name']);
-        if (!is_dir($target)) {
+        if (! is_dir($target)) {
             echo json_encode(['success' => false, 'error' => 'Folder not found.']);
             exit;
         }
@@ -140,14 +142,14 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
 
     // Clone from GitHub
     if (isset($_POST['cloneGithub'])) {
-        $url = trim($_POST['githubUrl']);
+        $url    = trim($_POST['githubUrl']);
         $folder = trim($_POST['cloneFolder']);
-        if (!preg_match('/^[A-Za-z0-9_\- ]{1,32}$/', $folder)) {
+        if (! preg_match('/^[A-Za-z0-9_\- ]{1,32}$/', $folder)) {
             echo json_encode(['success' => false, 'error' => 'Invalid folder name.']);
             exit;
         }
         if (
-            !preg_match('#^(https://([^@]+@)?github\.com/[^/]+/[^/]+(\.git)?|git@github\.com:[^/]+/[^/]+(\.git)?)$#i', $url)
+            ! preg_match('#^(https://([^@]+@)?github\.com/[^/]+/[^/]+(\.git)?|git@github\.com:[^/]+/[^/]+(\.git)?)$#i', $url)
         ) {
             echo json_encode(['success' => false, 'error' => 'Invalid GitHub URL.']);
             exit;
@@ -156,9 +158,9 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
             echo json_encode(['success' => false, 'error' => 'Folder already exists.']);
             exit;
         }
-        $jobId = uniqid('clone_', true);
+        $jobId   = uniqid('clone_', true);
         $logFile = __DIR__ . "/.clone_log_{$jobId}.txt";
-        $cmd = sprintf(
+        $cmd     = sprintf(
             'git clone --progress --depth=1 %s %s > %s 2>&1 & echo $!',
             escapeshellarg($url),
             escapeshellarg($folder),
@@ -171,11 +173,11 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
 
     // Clone progress
     if (isset($_POST['cloneProgress'])) {
-        $jobId = preg_replace('/[^a-zA-Z0-9_\.\-]/', '', $_POST['jobId']);
+        $jobId   = preg_replace('/[^a-zA-Z0-9_\.\-]/', '', $_POST['jobId']);
         $logFile = __DIR__ . "/.clone_log_{$jobId}.txt";
-        $done = false;
+        $done    = false;
         $percent = 0;
-        $log = '';
+        $log     = '';
         if (file_exists($logFile)) {
             $log = file_get_contents($logFile);
             if (preg_match('/Checking out files: +(\d+)%/', $log, $m)) {
@@ -185,14 +187,14 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
             }
             if (strpos($log, 'done.') !== false || strpos($log, 'Checking connectivity... done.') !== false) {
                 $percent = 100;
-                $done = true;
+                $done    = true;
                 // Add folder to .gitignore if not already present
                 $folder = isset($_POST['cloneFolder']) ? $_POST['cloneFolder'] : null;
-                if (!$folder && preg_match("/Cloning into '([^']+)'/", $log, $m2)) {
+                if (! $folder && preg_match("/Cloning into '([^']+)'/", $log, $m2)) {
                     $folder = $m2[1];
                 }
                 if ($folder) {
-                    $gitignore = __DIR__ . '/.gitignore';
+                    $gitignore      = __DIR__ . '/.gitignore';
                     $alreadyIgnored = false;
                     if (file_exists($gitignore)) {
                         $lines = file($gitignore, FILE_IGNORE_NEW_LINES | FILE_SKIP_EMPTY_LINES);
@@ -203,7 +205,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
                             }
                         }
                     }
-                    if (!$alreadyIgnored) {
+                    if (! $alreadyIgnored) {
                         file_put_contents($gitignore, $folder . "\n", FILE_APPEND | LOCK_EX);
                     }
                 }
@@ -215,8 +217,8 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
     }
 
     if (isset($_POST['saveLinks'])) {
-        $links = isset($_POST['links']) ? $_POST['links'] : array();
-        $file = __DIR__ . "/link.txt";
+        $links   = isset($_POST['links']) ? $_POST['links'] : [];
+        $file    = __DIR__ . "/link.txt";
         $content = implode("\n", array_map("trim", $links));
         if (file_put_contents($file, $content) !== false) {
             echo json_encode(["success" => true]);
@@ -225,4 +227,143 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
         }
         exit;
     }
+
+    if (isset($_POST['saveFile'])) {
+        $folder  = isset($_POST['folder']) ? $_POST['folder'] : '.';
+        $file    = isset($_POST['file']) ? $_POST['file'] : '';
+        $content = isset($_POST['content']) ? $_POST['content'] : '';
+
+        $baseDir = realpath(__DIR__);
+        $target  = realpath($baseDir . '/' . $folder);
+
+        if (! $target || strpos($target, $baseDir) !== 0) {
+            echo json_encode(['success' => false, 'error' => 'Invalid folder']);
+            exit;
+        }
+
+        $path = $target . '/' . $file;
+
+        // kalau folder ada tapi file belum ada, cek foldernya bisa ditulis
+        if ((! file_exists($path) && ! is_writable($target)) ||
+            (file_exists($path) && ! is_writable($path))) {
+            echo json_encode(['success' => false, 'error' => 'File not writable']);
+            exit;
+        }
+
+        file_put_contents($path, $content);
+        echo json_encode(['success' => true]);
+        exit;
+    }
+
+// create file
+    if (isset($_POST['createFile'])) {
+        $folder = $_POST['folder'];
+        $name   = basename($_POST['name']);
+        $path   = __DIR__ . '/' . $folder . '/' . $name;
+        if (file_exists($path)) {
+            echo json_encode(['success' => false, 'error' => 'File already exists']);
+            exit;
+        }
+        file_put_contents($path, ""); // kosong
+        echo json_encode(['success' => true]);
+        exit;
+    }
+
+// create folder
+    if (isset($_POST['createFolder'])) {
+        $folder = $_POST['folder'];
+        $name   = basename($_POST['name']);
+        $path   = __DIR__ . '/' . $folder . '/' . $name;
+        if (file_exists($path)) {
+            echo json_encode(['success' => false, 'error' => 'Folder already exists']);
+            exit;
+        }
+        mkdir($path, 0777, true);
+        echo json_encode(['success' => true]);
+        exit;
+    }
+}
+
+// list directory
+if (isset($_GET['listFiles'])) {
+    $folder  = isset($_GET['folder']) ? $_GET['folder'] : '.'; // default ke current folder
+    $baseDir = realpath(__DIR__);                              // root project dir
+
+    // normalisasi path, hapus ./ di depan
+    $folder = ltrim($folder, './');
+    $folder = trim($folder, '/');
+
+    $targetDir = realpath($baseDir . '/' . $folder);
+
+    // cek validitas path
+    if (! $targetDir || strpos($targetDir, $baseDir) !== 0) {
+        echo json_encode(['success' => false, 'error' => 'Invalid folder path']);
+        exit;
+    }
+
+    if (! is_dir($targetDir)) {
+        echo json_encode(['success' => false, 'error' => 'Not a directory: ' . $folder]);
+        exit;
+    }
+
+    $entries = [];
+
+    foreach (scandir($targetDir) as $f) {
+        if ($f === '.') {
+            continue;
+        }
+
+        if ($f === '..') {
+            // hanya tambahkan kalau bukan root
+            if ($folder !== '' && $folder !== '.' && $folder !== '/') {
+                $parent = dirname($folder);
+
+                // normalisasi supaya tidak keluar root
+                if ($parent === '' || $parent === '.' || $parent === '/' || $parent === '\\') {
+                    $parent = '.';
+                }
+
+                $entries[] = [
+                    'name' => '..',
+                    'type' => 'dir',
+                    'path' => $parent,
+                ];
+            }
+            continue;
+        }
+
+        $relPath = ($folder === '' || $folder === '.') ? $f : $folder . '/' . $f;
+
+        $entries[] = [
+            'name' => $f,
+            'type' => is_dir($targetDir . '/' . $f) ? 'dir' : 'file',
+            'path' => $relPath, // ✅ ini penting
+        ];
+    }
+
+    echo json_encode([
+        'success' => true,
+        'entries' => $entries,
+        'current' => $folder === '' ? '.' : $folder,
+    ]);
+    exit;
+}
+
+if (isset($_GET['getFile'])) {
+    $folder = isset($_GET['folder']) ? $_GET['folder'] : '.';
+    $file   = isset($_GET['file']) ? $_GET['file'] : '';
+
+    $baseDir = realpath(__DIR__);
+    $target  = realpath($baseDir . '/' . $folder . '/' . $file);
+
+    // keamanan: pastikan file masih di dalam baseDir
+    if (! $target || strpos($target, $baseDir) !== 0 || ! is_file($target)) {
+        echo json_encode(['success' => false, 'error' => 'File not found']);
+        exit;
+    }
+    echo json_encode([
+        'success' => true,
+        'content' => file_get_contents($target),
+    ]);
+    exit;
 }
