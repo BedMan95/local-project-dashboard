@@ -572,6 +572,7 @@
 						applySwalDarkmode();
 					}, 'json');
 				});
+				applySwalDarkmode();
 			});
 
 			// === tombol new folder ===
@@ -595,6 +596,7 @@
 						applySwalDarkmode();
 					}, 'json');
 				});
+				applySwalDarkmode();
 			});
 
 			$('.delete-project-btn').on('click', function() {
