@@ -202,45 +202,48 @@
 	</div>
 	<div id="realtimeClock"></div>
 
-	<!-- Modal -->
-	<!-- Modal Editor -->
-	<div id="editorModal" 
-		style="display:none; position:fixed; top:5%; left:5%;
-		width:90%; height:90%; background:#1e1e1e; border-radius:10px; 
-		box-shadow:0 0 20px #000; z-index:1050;">
-		
+	<div id="editorModal" style="display:none; position:fixed; top:5%; left:5%; 
+		width:90%; height:90%; border-radius:10px; box-shadow:0 0 20px #000; z-index:1050;">
+			
 		<div style="height:100%; display:flex; flex-direction:column;">
 			<!-- Header -->
-			<div style="padding:10px; background:#333; color:#fff; display:flex; justify-content:space-between; align-items:center;">
-			<span id="editorFilename"></span>
-			<button onclick="closeEditor()" 
-					style="background:#e74c3c;color:#fff;border:none;padding:5px 10px;cursor:pointer;">
-				✕
-			</button>
+			<div class="editor-header" style="padding:10px; display:flex; justify-content:space-between; align-items:center;">
+				<span id="editorFilename"></span>
+				<button onclick="closeEditor()" 
+						style="background:#e74c3c;color:#fff;border:none;padding:5px 10px;cursor:pointer;">
+					✕
+				</button>
 			</div>
 
 			<!-- Body: Explorer + Editor -->
 			<div style="flex:1; display:flex; overflow:hidden;">
-			<!-- Sidebar explorer -->
-			<div id="editorExplorer" style="width:220px; background:#2c2c2c; color:#fff; 
-				padding:10px; overflow:auto; border-right:1px solid #444;">
-				<!-- isi file/folder explorer diisi via JS -->
-				<ul id="explorerRoot" class="list-unstyled"></ul>
-			</div>
+				<!-- Sidebar explorer -->
+				<div id="editorExplorer" class="editor-explorer" style="width:220px; padding:10px; overflow:auto;">
+					<ul id="explorerRoot" class="list-unstyled"></ul>
+				</div>
 
-			<!-- Monaco editor -->
-			<div id="monacoEditor" style="flex:1;"></div>
+				<!-- Monaco editor -->
+				<div id="monacoEditor" style="flex:1;"></div>
 			</div>
 
 			<!-- Footer -->
-			<div style="padding:10px; background:#333; text-align:right;">
-			<button onclick="saveFile()" 
-					style="background:#2ecc71;color:#fff;border:none;padding:5px 10px;cursor:pointer;">
-				💾 Save
-			</button>
+			<div class="editor-footer" style="padding:10px; text-align:right;">
+				<button onclick="saveFile()" 
+						style="background:#2ecc71;color:#fff;border:none;padding:5px 10px;cursor:pointer;">
+					💾 Save
+				</button>
 			</div>
 		</div>
-		</div>
+	</div>
+
+	<!-- Context menu untuk panel kiri -->
+	<ul id="explorerContextMenu" class="dropdown-menu" style="position:absolute; display:none; z-index:1051;">
+		<li><a class="dropdown-item" href="#" id="ctx-new-file"><i class="fa fa-file me-2"></i>New File</a></li>
+		<li><a class="dropdown-item" href="#" id="ctx-new-folder"><i class="fa fa-folder me-2"></i>New Folder</a></li>
+		<li><hr class="dropdown-divider"></li>
+		<li><a class="dropdown-item" href="#" id="ctx-rename"><i class="fa fa-edit me-2"></i>Rename</a></li>
+		<li><a class="dropdown-item text-danger" href="#" id="ctx-delete"><i class="fa fa-trash me-2"></i>Delete</a></li>
+	</ul>
 
 	<script>
 		<?php if (! empty($error)): ?>
@@ -265,6 +268,14 @@
 					'color': '#e0e0e0',
 					'border': '1px solid #444'
 				});
+				$('#explorerContextMenu').css({
+					'background-color': '#2c2f36',
+					'color': '#e0e0e0',
+					'border': '1px solid #444'
+				});
+				$('.dropdown-item').css({
+					'color': '#e0e0e0',
+				});
 			} else {
 				Swal.update({
 					background: '',
@@ -279,6 +290,24 @@
 					'color': '',
 					'border': ''
 				});
+				$('#explorerContextMenu').css({
+					'background-color': '',
+					'color': '',
+					'border': ''
+				});
+				$('.dropdown-item').css({
+					'background-color': '',
+					'color': '',
+					'border': ''
+				});
+			}
+
+			if (typeof monaco !== "undefined" && typeof editorInstance !== "undefined") {
+				if ($('body').hasClass('darkmode')) {
+					monaco.editor.setTheme("vs-dark");
+				} else {
+					monaco.editor.setTheme("vs");
+				}
 			}
 		}
 
@@ -334,8 +363,10 @@
 							hideLoading();
 							if (resp.success) {
 								Swal.fire('Created!', '', 'success').then(() => location.reload());
+								applySwalDarkmode();
 							} else {
 								Swal.fire('Error', resp.error || 'Failed to create project.', 'error');
+								applySwalDarkmode();
 							}
 							applySwalDarkmode();
 						}, 'json').fail(function() {
@@ -446,6 +477,7 @@
 						applySwalDarkmode();
 
 					} else if (choice.value === 'file') {
+						editorInstance.setValue("");
 						// ==== OPEN PROJECT IN EDITOR ====
 						showLoading('Loading project...');
 						$.getJSON('api.php', { listFiles: 1, folder: folder }, function (resp) {
@@ -588,9 +620,11 @@
 					$.post('api.php', { createFile: 1, folder: folder, name: res.value }, function (resp) {
 						if (resp.success) {
 							Swal.fire("Berhasil!", "File berhasil dibuat", "success");
-                    		refreshExplorer()
+							applySwalDarkmode();
+                    		refreshExplorer();
 						} else {
 							Swal.fire('Error', resp.error || 'Failed to create file.', 'error');
+							applySwalDarkmode();
 						}
 						applySwalDarkmode();
 					}, 'json');
@@ -618,9 +652,11 @@
 					$.post('api.php', { createFolder: 1, folder: folder, name: res.value }, function (resp) {
 						if (resp.success) {
 							Swal.fire("Berhasil!", "File berhasil dibuat", "success");
+							applySwalDarkmode();
                     		refreshExplorer();
 						} else {
 							Swal.fire('Error', resp.error || 'Failed to create folder.', 'error');
+							applySwalDarkmode();
 						}
 						applySwalDarkmode();
 					}, 'json');
@@ -774,6 +810,7 @@
 						} else {
 							$('#cloneProjectError').text(resp.error || 'Clone failed.');
 							Swal.fire('Error', resp.error || 'Clone failed.', 'error');
+							applySwalDarkmode();
 						}
 						applySwalDarkmode();
 					}, 'json');
@@ -880,6 +917,7 @@
 						linksModal.hide();
 						location.reload();
 					});
+					applySwalDarkmode();
 				} else {
 					$('#linkError').text(resp.error || "Failed to save links.");
 				}
@@ -936,6 +974,7 @@
 						showConfirmButton: false,
 						timer: 2000,
 					});
+					applySwalDarkmode();
 				} else {
 					Swal.fire({
 						toast: true,
@@ -945,7 +984,9 @@
 						showConfirmButton: false,
 						timer: 3000,
 					});
+					applySwalDarkmode();
 				}
+				applySwalDarkmode();
 			}, "json");
 		}
 
@@ -1013,7 +1054,9 @@
 					openFileInEditor(path, resp.content, guessLanguage(name));
 				} else {
 					Swal.fire('Error', 'Tidak bisa buka file', 'error');
+					applySwalDarkmode();
 				}
+				applySwalDarkmode();
 			}, 'json');
 		}
 
@@ -1084,6 +1127,7 @@
 			$.getJSON('api.php', { listFiles: 1, folder: folder }, function (resp) {
 				if (!resp.success) {
 					Swal.fire('Error', resp.error || 'Failed to refresh explorer.', 'error');
+					applySwalDarkmode();
 					return;
 				}
 
@@ -1119,6 +1163,180 @@
 				$('#editorExplorer').html(explorerHtml);
 			});
 		}
+
+		let contextTargetPath = null;
+		let contextTargetType = null;
+
+		// === tampilkan context menu hanya di file/folder ===
+		$(document).on("contextmenu", ".file-item, .folder-item", function(e) {
+			e.preventDefault();
+			e.stopPropagation();
+
+			contextTargetPath = $(this).data("path");
+			contextTargetType = $(this).data("type");
+
+			console.log(contextTargetPath, contextTargetType);
+
+			$("#explorerContextMenu")
+				.css({ top: e.pageY, left: e.pageX })
+				.show();
+		});
+
+		// sembunyikan menu kalau klik di luar
+		$(document).on("click contextmenu", function(e) {
+			if (!$(e.target).closest("#explorerContextMenu").length) {
+				$("#explorerContextMenu").hide();
+			}
+		});
+
+		// New File
+		$("#ctx-new-file").on("click", function (e) {
+			e.preventDefault();
+			const folder = contextTargetPath;
+			$("#explorerContextMenu").hide();
+
+			Swal.fire({
+				title: "Nama file baru",
+				input: "text",
+				inputPlaceholder: "example.txt",
+				showCancelButton: true,
+				confirmButtonText: "Create",
+				preConfirm: (val) => val.trim()
+			}).then(result => {
+				if (!result.isConfirmed) return;
+				$.post("api.php", { createFile: 1, folder: folder, name: result.value }, function (resp) {
+					if (resp.success) {
+						Swal.fire("Berhasil!", "File berhasil dibuat", "success");
+						applySwalDarkmode();
+						refreshExplorer();
+					} else {
+						Swal.fire("Error", resp.error || "Gagal membuat file", "error");
+						applySwalDarkmode();
+					}
+				}, "json");
+			});
+			applySwalDarkmode();
+		});
+
+		// New Folder
+		$("#ctx-new-folder").on("click", function (e) {
+			e.preventDefault();
+			const folder = contextTargetPath;
+			$("#explorerContextMenu").hide();
+
+			Swal.fire({
+				title: "Nama folder baru",
+				input: "text",
+				inputPlaceholder: "new-folder",
+				showCancelButton: true,
+				confirmButtonText: "Create",
+				preConfirm: (val) => val.trim()
+			}).then(result => {
+				if (!result.isConfirmed) return;
+				$.post("api.php", { createFolder: 1, folder: folder, name: result.value }, function (resp) {
+					if (resp.success) {
+						Swal.fire("Berhasil!", "Folder berhasil dibuat", "success");
+						applySwalDarkmode();
+						refreshExplorer();
+					} else {
+						Swal.fire("Error", resp.error || "Gagal membuat folder", "error");
+						applySwalDarkmode();
+					}
+				}, "json");
+			});
+			applySwalDarkmode();
+		});
+
+		$("#ctx-delete").on("click", function(e) {
+			e.preventDefault();
+			$("#explorerContextMenu").hide();
+
+			if (!contextTargetPath) return;
+
+			Swal.fire({
+				title: "Delete?",
+				text: "Yakin ingin menghapus " + contextTargetType + " ini?\n" + contextTargetPath,
+				icon: "warning",
+				showCancelButton: true,
+				confirmButtonText: "Delete",
+				cancelButtonText: "Cancel",
+				confirmButtonColor: "#d33"
+			}).then((res) => {
+				if (!res.isConfirmed) return;
+
+				showLoading("Deleting...");
+
+				$.post("api.php", { 
+					deleteEntry: 1, 
+					path: contextTargetPath 
+				}, function(resp) {
+					hideLoading();
+					if (resp.success) {
+						Swal.fire("Deleted!", "", "success");
+						applySwalDarkmode();
+						refreshExplorer();
+					} else {
+						Swal.fire("Error", resp.error || "Failed to delete.", "error");
+						applySwalDarkmode();
+					}
+					applySwalDarkmode();
+				}, "json").fail(function() {
+					hideLoading();
+					Swal.fire("Error", "Failed to delete.", "error");
+					applySwalDarkmode();
+				});
+			});
+			applySwalDarkmode();
+		});
+
+		// === aksi rename ===
+		$("#ctx-rename").on("click", function(e) {
+			e.preventDefault();
+			$("#explorerContextMenu").hide();
+
+			if (!contextTargetPath) return;
+
+			const currentName = contextTargetPath.split(/[\\/]/).pop(); // ambil nama file/folder terakhir
+
+			Swal.fire({
+				title: "Rename " + contextTargetType,
+				input: "text",
+				inputValue: currentName,
+				showCancelButton: true,
+				confirmButtonText: "Rename",
+				cancelButtonText: "Cancel",
+				inputValidator: (value) => {
+					if (!value) return "Nama tidak boleh kosong!";
+				}
+			}).then((res) => {
+				if (!res.isConfirmed) return;
+
+				showLoading("Renaming...");
+
+				$.post("api.php", { 
+					renameEntry: 1, 
+					path: contextTargetPath,
+					newName: res.value
+				}, function(resp) {
+					hideLoading();
+					if (resp.success) {
+						Swal.fire("Renamed!", "", "success");
+						applySwalDarkmode();
+						refreshExplorer();
+					} else {
+						Swal.fire("Error", resp.error || "Failed to rename.", "error");
+						applySwalDarkmode();
+					}
+					applySwalDarkmode();
+				}, "json").fail(function() {
+					hideLoading();
+					Swal.fire("Error", "Failed to rename.", "error");
+					applySwalDarkmode();
+				});
+			});
+			applySwalDarkmode();
+		});
+
 	</script>
 </body>
 

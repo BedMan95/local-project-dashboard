@@ -384,3 +384,54 @@ body:not(.darkmode) #realtimeClock {
 	color: #ff6600;
 	text-decoration: underline;
 }
+
+#editorExplorer .file-item {
+    display: block;       /* tombol jadi full baris */
+    width: 100%;          /* penuh mengikuti parent <li> */
+    text-align: left;     /* teks tetap rata kiri */
+    border-radius: 0;     /* biar rapih kayak list VSCode */
+    margin-bottom: 5px;   /* jarak antar item */
+}
+#editorExplorer ul {
+    margin-bottom: 0;
+}
+
+/* Default (Light) */
+#editorModal {
+	background: #f9f9f9;
+	color: #222;
+}
+#editorModal .editor-header {
+	background: #e0e0e0;
+	color: #222;
+}
+#editorModal .editor-explorer {
+	background: #f1f1f1;
+	color: #222;
+	border-right: 1px solid #ccc;
+}
+#editorModal .editor-footer {
+	background: #e0e0e0;
+	color: #222;
+}
+
+/* Dark mode */
+body.darkmode #editorModal {
+	background: #1e1e1e;
+	color: #eee;
+}
+body.darkmode #editorModal .editor-header {
+	background: #333;
+	color: #fff;
+}
+body.darkmode #editorModal .editor-explorer {
+	background: #2c2c2c;
+	color: #fff;
+	border-right: 1px solid #444;
+}
+body.darkmode #editorModal .editor-footer {
+	background: #333;
+	color: #fff;
+}
+
+

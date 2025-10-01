@@ -5,17 +5,20 @@ function rrmdir($dir)
         $objects = scandir($dir);
         foreach ($objects as $object) {
             if ($object != "." && $object != "..") {
-                $path = $dir . "/" . $object;
-                if (is_dir($path)) {
-                    rrmdir($path);
+                $sub = $dir . DIRECTORY_SEPARATOR . $object;
+                if (is_dir($sub)) {
+                    rrmdir($sub);
                 } else {
-                    @unlink($path);
+                    @unlink($sub);
                 }
 
             }
         }
-        @rmdir($dir);
+        return @rmdir($dir);
+    } elseif (is_file($dir)) {
+        return @unlink($dir);
     }
+    return false;
 }
 
 if ($_SERVER['REQUEST_METHOD'] === 'POST') {
@@ -365,5 +368,40 @@ if (isset($_GET['getFile'])) {
         'success' => true,
         'content' => file_get_contents($target),
     ]);
+    exit;
+}
+
+if (! empty($_POST['deleteEntry'])) {
+    $path = $_POST['path'];
+    if (! $path || $path === '.' || $path === '..') {
+        echo json_encode(['success' => false, 'error' => 'Invalid path']);
+        exit;
+    }
+
+    $result = rrmdir($path);
+    echo json_encode(['success' => $result, 'error' => $result ? '' : 'Failed to delete']);
+    exit;
+}
+
+if (! empty($_POST['renameEntry'])) {
+    $path    = isset($_POST['path']) ? $_POST['path'] : '';
+    $newName = isset($_POST['newName']) ? trim($_POST['newName']) : '';
+
+    if (! $path || ! $newName) {
+        echo json_encode(['success' => false, 'error' => 'Invalid input']);
+        exit;
+    }
+
+    $dir     = dirname($path);
+    $newPath = $dir . DIRECTORY_SEPARATOR . $newName;
+
+    if (file_exists($newPath)) {
+        echo json_encode(['success' => false, 'error' => 'File/Folder dengan nama tersebut sudah ada']);
+        exit;
+    }
+
+    $result = @rename($path, $newPath);
+
+    echo json_encode(['success' => $result, 'error' => $result ? '' : 'Failed to rename']);
     exit;
 }
