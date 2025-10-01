@@ -1,4 +1,5 @@
 <?php
+define('BASE_DIR', __DIR__);
 foreach (glob(__DIR__ . '/.clone_log_clone_*') as $logFile) {
     @unlink($logFile);
 }
@@ -159,25 +160,33 @@ foreach (glob(__DIR__ . '/.clone_log_clone_*') as $logFile) {
                 }
             }
             foreach ($projects as $proj) {
-                $name = htmlspecialchars($proj['name']);
-                $link = htmlspecialchars($proj['link']);
-                echo "<div class='col'>
-                    <div class='d-flex align-items-stretch h-100 project-folder'>
-                        <a class='project-link flex-grow-1' href='$link' data-name='$name' target='_blank' rel='noopener'>
-                            <span class='folder-icon'><i class='fa-solid fa-folder'></i></span>
-                            <span>$name</span>
-                        </a>
-                        <div class='d-flex flex-column ms-2 justify-content-center action-buttons'>
-                            <button class='btn btn-sm btn-outline-secondary mb-1 edit-project-btn' data-folder='$name' title='Edit Project'>
-                                <i class='fa fa-edit'></i>
-                            </button>
-                            <button class='btn btn-sm btn-outline-danger delete-project-btn' data-folder='$name' title='Delete Project'>
-                                <i class='fa fa-trash'></i>
-                            </button>
-                        </div>
-                    </div>
-                </div>";
-            }
+				$name = htmlspecialchars($proj['name'], ENT_QUOTES, 'UTF-8');
+				$link = htmlspecialchars($proj['link'], ENT_QUOTES, 'UTF-8');
+				$gitDir = realpath(BASE_DIR . '/' . $proj['name'] . '/.git');
+				$hasGit = is_dir($gitDir);
+				$escapedName = htmlspecialchars(json_encode($proj['name']), ENT_QUOTES, 'UTF-8');
+				echo "<div class='col'>
+					<div class='d-flex align-items-stretch h-100 project-folder'>
+						<a class='project-link flex-grow-1' href='$link' data-name='$name' target='_blank' rel='noopener'>
+							<span class='folder-icon'><i class='fa-solid fa-folder'></i></span>
+							<span>$name</span>
+						</a>
+						<div class='d-flex flex-column ms-2 justify-content-center action-buttons'>
+							<button class='btn btn-sm btn-outline-secondary mb-1 edit-project-btn' data-folder='$name' title='Edit Project'>
+								<i class='fa fa-edit'></i>
+							</button>";
+				if ($hasGit) {
+					echo "<button class='btn btn-sm btn-outline-info mb-1' data-folder='$name' onclick='pullProject($escapedName)'>
+						<i class='bi bi-arrow-down-circle'></i> Pull
+					</button>";
+				}
+				echo "<button class='btn btn-sm btn-outline-danger mb-1 delete-project-btn' data-folder='$name' title='Delete Project'>
+						<i class='fa fa-trash'></i>
+					</button>
+						</div>
+					</div>
+				</div>";
+			}
             ?>
         </div>
     </div>

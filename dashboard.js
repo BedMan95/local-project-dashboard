@@ -307,6 +307,31 @@ $(function () {
         applySwalDarkmode();
     });
 
+    function pullProject(folder) {
+        $.post('api.php', { pullGithub: true, folder: folder }, function(data) {
+            if (data.success) {
+                Swal.fire('Git Pull Started', 'Pulling changes for ' + folder, 'info');
+                checkPullProgress(data.jobId, folder);
+            } else {
+                Swal.fire('Error', data.error, 'error');
+            }
+        });
+    }
+
+    function checkPullProgress(jobId, folder) {
+        $.post('api.php', { pullProgress: true, jobId: jobId }, function(data) {
+            if (data.done) {
+                if (data.success) {
+                    Swal.fire('Git Pull Complete', 'Repository updated successfully.', 'success');
+                } else {
+                    Swal.fire('Git Pull Failed', data.error, 'error');
+                }
+            } else {
+                // Update progress (e.g., show percentage in UI)
+                setTimeout(function() { checkPullProgress(jobId, folder); }, 1000);
+            }
+        });
+    }
     // Link Management
     $('#manageLinksBtn').on('click', () => {
         loadLinks();
@@ -680,4 +705,6 @@ $(function () {
 
     // Initialize
     renderExplorer('.', $('#explorerRoot'));
+
+    window.pullProject = pullProject;
 });

@@ -2,7 +2,7 @@
 // Constants
 define('BASE_DIR', __DIR__);
 define('GITIGNORE_FILE', BASE_DIR . '/.gitignore');
-define('VALID_NAME_PATTERN', '/^[A-Za-z0-9_\- ]{1,32}$/');
+define('VALID_NAME_PATTERN', '/^[A-Za-z0-9_\-\. ]{1,32}$/'); // Allow dots (.)
 
 // Utility function to recursively delete a directory or file
 function rrmdir($path)
@@ -189,6 +189,67 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
         sendJsonResponse(true, ['log' => $log, 'percent' => $percent, 'done' => $done]);
     }
 
+    // Pull from GitHub
+    if (isset($_POST['pullGithub'])) {
+        $folder = trim($_POST['folder']);
+
+        if (! preg_match(VALID_NAME_PATTERN, $folder)) {
+            sendJsonResponse(false, [], 'Invalid folder name.');
+        }
+
+        $gitDir = BASE_DIR . '/' . $folder . '/.git';
+        if (! is_dir($gitDir)) {
+            sendJsonResponse(false, [], 'Not a Git repository: .git folder not found.');
+        }
+
+        $jobId   = uniqid('pull_', true);
+        $logFile = BASE_DIR . "/.pull_log_{$jobId}.txt";
+        $cmd     = sprintf('cd %s && git pull --progress > %s 2>&1 & echo $!',
+            escapeshellarg(BASE_DIR . '/' . $folder),
+            escapeshellarg($logFile));
+
+        $pid = trim(shell_exec($cmd));
+        if (! $pid) {
+            sendJsonResponse(false, [], 'Failed to start git pull process.');
+        }
+
+        sendJsonResponse(true, ['jobId' => $jobId]);
+    }
+
+    // Pull progress
+    if (isset($_POST['pullProgress'])) {
+        $jobId   = preg_replace('/[^a-zA-Z0-9_\.\-]/', '', $_POST['jobId']);
+        $logFile = BASE_DIR . "/.pull_log_{$jobId}.txt";
+        $done    = false;
+        $percent = 0;
+        $log     = '';
+
+        if (file_exists($logFile)) {
+            $log = file_get_contents($logFile);
+            if (preg_match('/Receiving objects: +(\d+)%/', $log, $m)) {
+                $percent = (int) $m[1];
+            } elseif (preg_match('/Updating files: +(\d+)%/', $log, $m)) {
+                $percent = (int) $m[1];
+            }
+
+            if (strpos($log, 'Already up to date.') !== false ||
+                strpos($log, 'Fast-forward') !== false ||
+                strpos($log, 'done.') !== false) {
+                $percent = 100;
+                $done    = true;
+                @unlink($logFile);
+            } elseif (strpos($log, 'error:') !== false ||
+                strpos($log, 'fatal:') !== false) {
+                $done  = true;
+                $error = 'Git pull failed: ' . $log;
+                @unlink($logFile);
+                sendJsonResponse(false, ['log' => $log, 'percent' => $percent, 'done' => $done], $error);
+            }
+        }
+
+        sendJsonResponse(true, ['log' => $log, 'percent' => $percent, 'done' => $done]);
+    }
+
     // Save links
     if (isset($_POST['saveLinks'])) {
         $links   = isset($_POST['links']) ? $_POST['links'] : [];
@@ -334,7 +395,7 @@ if (isset($_GET['listFiles'])) {
 // Get file content
 if (isset($_GET['getFile'])) {
     $folder  = isset($_GET['folder']) ? $_GET['folder'] : '.';
-    $file    = isset($_GET['file']) ? $_GET['file'] : '';
+    $file    = isset($_GET['file']) ? $_POST['file'] : '';
     $baseDir = realpath(BASE_DIR);
     $target  = realpath($baseDir . '/' . $folder . '/' . $file);
 

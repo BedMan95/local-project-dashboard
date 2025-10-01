@@ -231,6 +231,37 @@ body.darkmode .project-link:hover .folder-icon {
     transform: scale(0.97);
 }
 
+.btn-pull-project {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: 0.5rem;
+    background: linear-gradient(135deg, #10b981, #059669);
+    color: white;
+    border: none;
+    border-radius: 2rem;
+    padding: 0 1rem;
+    font-size: 0.95rem;
+    font-weight: 500;
+    height: calc(2.375rem + 2px);
+    box-shadow: 0 3px 10px rgba(16, 185, 129, 0.2);
+    transition: all 0.2s ease-in-out;
+}
+
+.btn-pull-project:hover {
+    transform: translateY(-1px);
+    box-shadow: 0 5px 16px rgba(16, 185, 129, 0.3);
+    background: linear-gradient(135deg, #059669, #047857);
+}
+
+.btn-pull-project:active {
+    transform: scale(0.97);
+}
+
+.btn-pull-project i {
+    font-size: 1rem;
+}
+
 .action-buttons {
     transform: translateX(-3px);
 }
