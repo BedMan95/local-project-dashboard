@@ -151,6 +151,9 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
             sendJsonResponse(false, [], 'Folder already exists.');
         }
 
+        // Add clone folder to .gitignore before cloning
+        updateGitignore($folder);
+
         $jobId   = uniqid('clone_', true);
         $logFile = BASE_DIR . "/.clone_log_{$jobId}.txt";
         $cmd     = sprintf('git clone --progress --depth=1 %s %s > %s 2>&1 & echo $!',
@@ -179,13 +182,6 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
             if (strpos($log, 'done.') !== false || strpos($log, 'Checking connectivity... done.') !== false) {
                 $percent = 100;
                 $done    = true;
-                $folder  = isset($_POST['cloneFolder']) ? $_POST['cloneFolder'] : '';
-                if (! $folder && preg_match("/Cloning into '([^']+)'/", $log, $m)) {
-                    $folder = $m[1];
-                }
-                if ($folder) {
-                    updateGitignore($folder);
-                }
                 @unlink($logFile);
             }
         }
