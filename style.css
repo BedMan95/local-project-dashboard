@@ -372,15 +372,15 @@ body:not(.darkmode) #realtimeClock {
 }
 
 #link-marquee a {
-  text-decoration: none;
-  color: #007bff;
-  font-weight: bold;
-  margin-right: 40px;
-  transition: color 0.3s;
-  font-style: normal;
+	text-decoration: none;
+	color: #007bff;
+	font-weight: bold;
+	margin-right: 40px;
+	transition: color 0.3s;
+	font-style: normal;
 }
 
 #link-marquee a:hover {
-  color: #ff6600;
-  text-decoration: underline;
+	color: #ff6600;
+	text-decoration: underline;
 }

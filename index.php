@@ -203,22 +203,44 @@
 	<div id="realtimeClock"></div>
 
 	<!-- Modal -->
-	<div id="editorModal" style="display:none; position:fixed; top:5%; left:5%; 
-		width:70%; height:90%; background:#1e1e1e; border-radius:10px; box-shadow:0 0 20px #000; z-index:9999;">
+	<!-- Modal Editor -->
+	<div id="editorModal" 
+		style="display:none; position:fixed; top:5%; left:5%;
+		width:90%; height:90%; background:#1e1e1e; border-radius:10px; 
+		box-shadow:0 0 20px #000; z-index:1050;">
+		
 		<div style="height:100%; display:flex; flex-direction:column;">
 			<!-- Header -->
 			<div style="padding:10px; background:#333; color:#fff; display:flex; justify-content:space-between; align-items:center;">
-				<span id="editorFilename"></span>
-				<button onclick="closeEditor()" style="background:#e74c3c;color:#fff;border:none;padding:5px 10px;cursor:pointer;">✕</button>
+			<span id="editorFilename"></span>
+			<button onclick="closeEditor()" 
+					style="background:#e74c3c;color:#fff;border:none;padding:5px 10px;cursor:pointer;">
+				✕
+			</button>
 			</div>
-			<!-- Editor Container -->
+
+			<!-- Body: Explorer + Editor -->
+			<div style="flex:1; display:flex; overflow:hidden;">
+			<!-- Sidebar explorer -->
+			<div id="editorExplorer" style="width:220px; background:#2c2c2c; color:#fff; 
+				padding:10px; overflow:auto; border-right:1px solid #444;">
+				<!-- isi file/folder explorer diisi via JS -->
+				<ul id="explorerRoot" class="list-unstyled"></ul>
+			</div>
+
+			<!-- Monaco editor -->
 			<div id="monacoEditor" style="flex:1;"></div>
+			</div>
+
 			<!-- Footer -->
 			<div style="padding:10px; background:#333; text-align:right;">
-				<button onclick="saveFile()" style="background:#2ecc71;color:#fff;border:none;padding:5px 10px;cursor:pointer;">💾 Save</button>
+			<button onclick="saveFile()" 
+					style="background:#2ecc71;color:#fff;border:none;padding:5px 10px;cursor:pointer;">
+				💾 Save
+			</button>
 			</div>
 		</div>
-	</div>
+		</div>
 
 	<script>
 		<?php if (! empty($error)): ?>
@@ -374,7 +396,7 @@
 					if (!choice.isConfirmed) return;
 
 					if (choice.value === 'name') {
-						// ==== EDIT NAME ====
+						// ==== RENAME PROJECT ====
 						Swal.fire({
 							title: 'Edit Project Name',
 							input: 'text',
@@ -422,18 +444,19 @@
 							}
 						});
 						applySwalDarkmode();
+
 					} else if (choice.value === 'file') {
-						// ==== EDIT FILE ====
-						showLoading('Loading directory...');
+						// ==== OPEN PROJECT IN EDITOR ====
+						showLoading('Loading project...');
 						$.getJSON('api.php', { listFiles: 1, folder: folder }, function (resp) {
 							hideLoading();
 							if (!resp.success) {
-								Swal.fire('Error', resp.error || 'Failed to load files.', 'error');
-								applySwalDarkmode();
+								alert(resp.error || 'Failed to load files.');
 								return;
 							}
 
-							let fileListHtml = `
+							// render daftar file ke sidebar kiri editor
+							let explorerHtml = `
 								<div class="mb-2 d-flex justify-content-end gap-2">
 									<button class="btn btn-sm btn-primary create-file-btn" data-folder="${folder}">
 										<i class="fa fa-file"></i> New File
@@ -443,33 +466,31 @@
 									</button>
 								</div>
 								<div class="file-grid"
-									style="display:grid;grid-template-columns:repeat(auto-fill,minmax(150px,1fr));gap:10px;">`;
+									style="display:flex;flex-direction:column;gap:5px;">`;
 
 							$.each(resp.entries, function (i, entry) {
+								if (entry.name === '.' || entry.name === '..') return;
 								if (entry.type === 'dir') {
-									fileListHtml += `
-										<button class="file-item swal2-styled bg-secondary"
+									explorerHtml += `
+										<button class="file-item btn btn-sm btn-secondary text-start"
 												data-path="${entry.path}" data-type="dir">
 											<i class="fa fa-folder me-1"></i> ${entry.name}
 										</button>`;
 								} else {
-									fileListHtml += `
-										<button class="file-item swal2-styled"
+									explorerHtml += `
+										<button class="file-item btn btn-sm btn-outline-primary text-start"
 												data-path="${entry.path}" data-type="file">
 											<i class="fa fa-file-code me-1"></i> ${entry.name}
 										</button>`;
 								}
 							});
-							fileListHtml += '</div>';
+							explorerHtml += '</div>';
 
-							Swal.fire({
-								title: 'Browsing: ' + folder,
-								html: fileListHtml,
-								width: '80%',
-								showCancelButton: true,
-								showConfirmButton: false
-							});
-							applySwalDarkmode();
+							// masukkan explorer ke panel kiri dalam modal editor
+							$('#editorExplorer').html(explorerHtml);
+
+							// tampilkan editor modal (1 modal untuk semua)
+							$('#editorModal').show();
 						});
 					}
 				});
@@ -477,12 +498,12 @@
 			});
 
 			function openFolder(folder) {
-				showLoading('Loading directory...');
 				$.getJSON('api.php', { listFiles: 1, folder: folder }, function (resp) {
 					hideLoading();
+
 					if (!resp.success) {
-						Swal.fire('Error', resp.error || 'Failed to load files.', 'error');
-						applySwalDarkmode();
+						// ganti Swal -> alert / modal error
+						alert(resp.error || 'Failed to load files.');
 						return;
 					}
 
@@ -499,15 +520,16 @@
 							style="display:grid;grid-template-columns:repeat(auto-fill,minmax(150px,1fr));gap:10px;">`;
 
 					$.each(resp.entries, function (i, entry) {
+						if (entry.name === '.' || entry.name === '..') return;
 						if (entry.type === 'dir') {
 							fileListHtml += `
-								<button class="file-item swal2-styled bg-secondary"
+								<button class="file-item btn btn-sm btn-secondary"
 										data-path="${entry.path}" data-type="dir">
 									<i class="fa fa-folder me-1"></i> ${entry.name}
 								</button>`;
 						} else {
 							fileListHtml += `
-								<button class="file-item swal2-styled"
+								<button class="file-item btn btn-sm btn-outline-primary"
 										data-path="${entry.path}" data-type="file">
 									<i class="fa fa-file-code me-1"></i> ${entry.name}
 								</button>`;
@@ -515,14 +537,14 @@
 					});
 					fileListHtml += '</div>';
 
-					Swal.fire({
-						title: 'Browsing: ' + folder,
-						html: fileListHtml,
-						width: '90%',
-						showCancelButton: true,
-						showConfirmButton: false
-					});
-					applySwalDarkmode();
+					// === isi konten modal pakai jQuery ===
+					$('#fileModal .modal-title').text('Browsing: ' + folder);
+					$('#fileModal .modal-body').html(fileListHtml);
+
+					// === tampilkan modal pakai jQuery + Bootstrap 5 ===
+					var modalEl = document.getElementById('fileModal');
+					var modal = bootstrap.Modal.getOrCreateInstance(modalEl);
+					modal.show();
 				});
 			}
 
@@ -565,7 +587,8 @@
 					if (!res.isConfirmed) return;
 					$.post('api.php', { createFile: 1, folder: folder, name: res.value }, function (resp) {
 						if (resp.success) {
-							openFolder(folder);
+							Swal.fire("Berhasil!", "File berhasil dibuat", "success");
+                    		refreshExplorer()
 						} else {
 							Swal.fire('Error', resp.error || 'Failed to create file.', 'error');
 						}
@@ -584,12 +607,18 @@
 					inputPlaceholder: 'new-folder',
 					showCancelButton: true,
 					confirmButtonText: 'Create',
-					preConfirm: (val) => val.trim()
+					preConfirm: (val) => val.trim(),
+					allowOutsideClick: true,
+					allowEscapeKey: true,
+					didOpen: (el) => {
+						$(el).find('input').trigger('focus'); // paksa fokus ke input
+					}
 				}).then((res) => {
 					if (!res.isConfirmed) return;
 					$.post('api.php', { createFolder: 1, folder: folder, name: res.value }, function (resp) {
 						if (resp.success) {
-							openFolder(folder);
+							Swal.fire("Berhasil!", "File berhasil dibuat", "success");
+                    		refreshExplorer();
 						} else {
 							Swal.fire('Error', resp.error || 'Failed to create folder.', 'error');
 						}
@@ -796,14 +825,14 @@
 						let url = parts[0].trim();
 						let label = parts[1] ? parts[1].trim() : url;
 						tbody.append(`
-          <tr>
-            <td><input type="text" class="form-control form-control-sm link-url" value="${url}"></td>
-            <td><input type="text" class="form-control form-control-sm link-label" value="${label}"></td>
-            <td>
-              <button class="btn btn-danger btn-sm remove-link"><i class="fa fa-trash"></i></button>
-            </td>
-          </tr>
-        `);
+							<tr>
+								<td><input type="text" class="form-control form-control-sm link-url" value="${url}"></td>
+								<td><input type="text" class="form-control form-control-sm link-label" value="${label}"></td>
+								<td>
+								<button class="btn btn-danger btn-sm remove-link"><i class="fa fa-trash"></i></button>
+								</td>
+							</tr>
+							`);
 					});
 				}
 			});
@@ -811,14 +840,14 @@
 
 		$('#addLinkBtn').on('click', function() {
 			$("#linksTableBody").append(`
-    <tr>
-      <td><input type="text" class="form-control form-control-sm link-url" placeholder="https://example.com"></td>
-      <td><input type="text" class="form-control form-control-sm link-label" placeholder="My Project"></td>
-      <td>
-        <button class="btn btn-danger btn-sm remove-link"><i class="fa fa-trash"></i></button>
-      </td>
-    </tr>
-  `);
+				<tr>
+				<td><input type="text" class="form-control form-control-sm link-url" placeholder="https://example.com"></td>
+				<td><input type="text" class="form-control form-control-sm link-label" placeholder="My Project"></td>
+				<td>
+					<button class="btn btn-danger btn-sm remove-link"><i class="fa fa-trash"></i></button>
+				</td>
+				</tr>
+			`);
 		});
 
 		$(document).on('click', '.remove-link', function() {
@@ -862,23 +891,25 @@
 		let editorInstance;
 		let currentFilePath = "";
 
+		// load monaco
 		require.config({ paths: { 'vs': 'https://cdnjs.cloudflare.com/ajax/libs/monaco-editor/0.45.0/min/vs' }});
 		require(["vs/editor/editor.main"], function () {
 			editorInstance = monaco.editor.create(document.getElementById('monacoEditor'), {
 				value: "// Pilih file untuk mulai mengedit...",
-				language: "php", // default PHP
+				language: "php",
 				theme: "vs-dark",
 				automaticLayout: true
 			});
 		});
 
-		// buka file di modal
+		// buka file ke editor
 		function openFileInEditor(path, content, language="php") {
 			currentFilePath = path;
 			document.getElementById("editorFilename").innerText = path;
 			editorInstance.setValue(content);
 			monaco.editor.setModelLanguage(editorInstance.getModel(), language);
 
+			// tampilkan modal (custom)
 			document.getElementById("editorModal").style.display = "block";
 		}
 
@@ -887,7 +918,7 @@
 			document.getElementById("editorModal").style.display = "none";
 		}
 
-		// simpan file via AJAX
+		// simpan file
 		function saveFile() {
 			const content = editorInstance.getValue();
 			$.post("api.php", {
@@ -905,7 +936,6 @@
 						showConfirmButton: false,
 						timer: 2000,
 					});
-					applySwalDarkmode();
 				} else {
 					Swal.fire({
 						toast: true,
@@ -915,9 +945,179 @@
 						showConfirmButton: false,
 						timer: 3000,
 					});
-					applySwalDarkmode();
 				}
 			}, "json");
+		}
+
+		function renderExplorer(folder, container) {
+			$.get('api.php', { listFiles: 1, folder: folder }, function(resp) {
+				if (!resp.success) {
+					alert(resp.error);
+					return;
+				}
+
+				container.empty();
+				resp.entries.forEach(item => {
+					if (item.type === 'dir') {
+						const li = $(`
+							<li>
+								<div class="folder cursor-pointer">
+									<i class="fa fa-folder me-1"></i> ${item.name}
+								</div>
+								<ul class="children list-unstyled ms-3 d-none"></ul>
+							</li>
+						`);
+
+						// klik folder
+						li.find('.folder').on('click', function() {
+							const children = li.find('.children');
+							if (children.hasClass('d-none')) {
+								children.removeClass('d-none');
+								li.find('i').removeClass('fa-folder').addClass('fa-folder-open');
+
+								if (children.is(':empty')) {
+									renderExplorer(item.path, children);
+								}
+							} else {
+								children.addClass('d-none');
+								li.find('i').removeClass('fa-folder-open').addClass('fa-folder');
+							}
+						});
+
+						container.append(li);
+					} else {
+						const file = $(`
+							<li class="file cursor-pointer ms-4">
+								<i class="fa fa-file-code me-1"></i> ${item.name}
+							</li>
+						`);
+
+						file.on('click', function() {
+							openFile(item.path, item.name);
+						});
+
+						container.append(file);
+					}
+				});
+			}, 'json');
+		}
+
+		// pertama kali load root
+		$(document).ready(function() {
+			renderExplorer('.', $('#explorerRoot'));
+		});
+
+		function openFile(path, name) {
+			$.get('api.php', { getFile: 1, path: path }, function(resp) {
+				if (resp.success) {
+					openFileInEditor(path, resp.content, guessLanguage(name));
+				} else {
+					Swal.fire('Error', 'Tidak bisa buka file', 'error');
+				}
+			}, 'json');
+		}
+
+		// deteksi bahasa berdasarkan ekstensi
+		function guessLanguage(filename) {
+			const ext = filename.split('.').pop().toLowerCase();
+			switch(ext) {
+				case 'js': return 'javascript';
+				case 'php': return 'php';
+				case 'html': return 'html';
+				case 'css': return 'css';
+				case 'json': return 'json';
+				default: return 'plaintext';
+			}
+		}
+
+		$(document).on("click", "#editorExplorer .file-item[data-type='dir']", function (e) {
+			e.stopPropagation();
+			const $btn = $(this);
+			const path = $btn.data("path");
+
+			// cek apakah sudah pernah di-expand
+			if ($btn.hasClass("expanded")) {
+				$btn.next("ul").toggle(); // collapse/expand
+				return;
+			}
+
+			// ambil isi folder via AJAX
+			$.getJSON("api.php", { listFiles: 1, folder: path }, function (resp) {
+				if (!resp.success) {
+					alert(resp.error || "Failed to load folder.");
+					return;
+				}
+
+				let subHtml = "<ul class='list-unstyled ms-3'>";
+				$.each(resp.entries, function (i, entry) {
+					if (entry.name === '.' || entry.name === '..') return;
+
+					if (entry.type === "dir") {
+						subHtml += `
+							<li>
+								<button class="file-item btn btn-sm btn-secondary text-start" 
+									data-path="${entry.path}" data-type="dir">
+									<i class="fa fa-folder me-1"></i> ${entry.name}
+								</button>
+							</li>`;
+					} else {
+						subHtml += `
+							<li>
+								<button class="file-item btn btn-sm btn-outline-primary text-start" 
+									data-path="${entry.path}" data-type="file">
+									<i class="fa fa-file-code me-1"></i> ${entry.name}
+								</button>
+							</li>`;
+					}
+				});
+				subHtml += "</ul>";
+
+				$btn.after(subHtml);
+				$btn.addClass("expanded");
+			});
+		});
+
+		function refreshExplorer() {
+			const folder = $('.create-file-btn').data('folder') || $('.create-folder-btn').data('folder');
+			if (!folder) return;
+
+			$.getJSON('api.php', { listFiles: 1, folder: folder }, function (resp) {
+				if (!resp.success) {
+					Swal.fire('Error', resp.error || 'Failed to refresh explorer.', 'error');
+					return;
+				}
+
+				let explorerHtml = `
+					<div class="mb-2 d-flex justify-content-end gap-2">
+						<button class="btn btn-sm btn-primary create-file-btn" data-folder="${folder}">
+							<i class="fa fa-file"></i> New File
+						</button>
+						<button class="btn btn-sm btn-success create-folder-btn" data-folder="${folder}">
+							<i class="fa fa-folder"></i> New Folder
+						</button>
+					</div>
+					<div class="file-grid" style="display:flex;flex-direction:column;gap:5px;">`;
+
+				$.each(resp.entries, function (i, entry) {
+					if (entry.name === '.' || entry.name === '..') return;
+					if (entry.type === 'dir') {
+						explorerHtml += `
+							<button class="file-item btn btn-sm btn-secondary text-start"
+									data-path="${entry.path}" data-type="dir">
+								<i class="fa fa-folder me-1"></i> ${entry.name}
+							</button>`;
+					} else {
+						explorerHtml += `
+							<button class="file-item btn btn-sm btn-outline-primary text-start"
+									data-path="${entry.path}" data-type="file">
+								<i class="fa fa-file-code me-1"></i> ${entry.name}
+							</button>`;
+					}
+				});
+				explorerHtml += '</div>';
+
+				$('#editorExplorer').html(explorerHtml);
+			});
 		}
 	</script>
 </body>
