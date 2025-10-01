@@ -202,8 +202,8 @@
 	</div>
 	<div id="realtimeClock"></div>
 
-	<div id="editorModal" style="display:none; position:fixed; top:5%; left:5%; 
-		width:90%; height:90%; border-radius:10px; box-shadow:0 0 20px #000; z-index:1050;">
+	<div id="editorModal" style="display:none; position:fixed; top:1%; left:2%; 
+		width:95%; height:93%; border-radius:10px; box-shadow:0 0 20px #000; z-index:1050;">
 			
 		<div style="height:100%; display:flex; flex-direction:column;">
 			<!-- Header -->
@@ -489,16 +489,20 @@
 
 							// render daftar file ke sidebar kiri editor
 							let explorerHtml = `
-								<div class="mb-2 d-flex justify-content-end gap-2">
-									<button class="btn btn-sm btn-primary create-file-btn" data-folder="${folder}">
-										<i class="fa fa-file"></i> New File
+								<div class="mb-2 d-flex justify-content-center gap-1">
+									<button class="btn btn-sm btn-primary create-file-btn" 
+											data-folder="${folder}" 
+											style="display:flex; align-items:center; gap:4px; font-size:0.85rem;">
+										<i class="fa fa-file"></i> File
 									</button>
-									<button class="btn btn-sm btn-success create-folder-btn" data-folder="${folder}">
-										<i class="fa fa-folder"></i> New Folder
+									<button class="btn btn-sm btn-success create-folder-btn" 
+											data-folder="${folder}" 
+											style="display:flex; align-items:center; gap:4px; font-size:0.85rem;">
+										<i class="fa fa-folder"></i> Folder
 									</button>
 								</div>
-								<div class="file-grid"
-									style="display:flex;flex-direction:column;gap:5px;">`;
+								<div class="file-grid" style="display:flex; flex-direction:column; gap:4px; padding:2px;">
+								`;
 
 							$.each(resp.entries, function (i, entry) {
 								if (entry.name === '.' || entry.name === '..') return;
@@ -540,16 +544,20 @@
 					}
 
 					let fileListHtml = `
-						<div class="mb-2 d-flex justify-content-end gap-2">
-							<button class="btn btn-sm btn-primary create-file-btn" data-folder="${folder}">
-								<i class="fa fa-file"></i> New File
-							</button>
-							<button class="btn btn-sm btn-success create-folder-btn" data-folder="${folder}">
-								<i class="fa fa-folder"></i> New Folder
-							</button>
-						</div>
-						<div class="file-grid"
-							style="display:grid;grid-template-columns:repeat(auto-fill,minmax(150px,1fr));gap:10px;">`;
+						<div class="mb-2 d-flex justify-content-center gap-1">
+									<button class="btn btn-sm btn-primary create-file-btn" 
+											data-folder="${folder}" 
+											style="display:flex; align-items:center; gap:4px; font-size:0.85rem;">
+										<i class="fa fa-file"></i> File
+									</button>
+									<button class="btn btn-sm btn-success create-folder-btn" 
+											data-folder="${folder}" 
+											style="display:flex; align-items:center; gap:4px; font-size:0.85rem;">
+										<i class="fa fa-folder"></i> Folder
+									</button>
+								</div>
+								<div class="file-grid" style="display:flex; flex-direction:column; gap:4px; padding:2px;">
+								`;
 
 					$.each(resp.entries, function (i, entry) {
 						if (entry.name === '.' || entry.name === '..') return;
@@ -1132,15 +1140,20 @@
 				}
 
 				let explorerHtml = `
-					<div class="mb-2 d-flex justify-content-end gap-2">
-						<button class="btn btn-sm btn-primary create-file-btn" data-folder="${folder}">
-							<i class="fa fa-file"></i> New File
-						</button>
-						<button class="btn btn-sm btn-success create-folder-btn" data-folder="${folder}">
-							<i class="fa fa-folder"></i> New Folder
-						</button>
-					</div>
-					<div class="file-grid" style="display:flex;flex-direction:column;gap:5px;">`;
+					<div class="mb-2 d-flex justify-content-center gap-1">
+									<button class="btn btn-sm btn-primary create-file-btn" 
+											data-folder="${folder}" 
+											style="display:flex; align-items:center; gap:4px; font-size:0.85rem;">
+										<i class="fa fa-file"></i> File
+									</button>
+									<button class="btn btn-sm btn-success create-folder-btn" 
+											data-folder="${folder}" 
+											style="display:flex; align-items:center; gap:4px; font-size:0.85rem;">
+										<i class="fa fa-folder"></i> Folder
+									</button>
+								</div>
+								<div class="file-grid" style="display:flex; flex-direction:column; gap:4px; padding:2px;">
+								`;
 
 				$.each(resp.entries, function (i, entry) {
 					if (entry.name === '.' || entry.name === '..') return;

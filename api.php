@@ -292,7 +292,7 @@ if (isset($_GET['listFiles'])) {
     $folder  = isset($_GET['folder']) ? $_GET['folder'] : '.'; // default ke current folder
     $baseDir = realpath(__DIR__);                              // root project dir
 
-    // normalisasi path, hapus ./ di depan
+    // normalisasi path
     $folder = ltrim($folder, './');
     $folder = trim($folder, '/');
 
@@ -309,7 +309,8 @@ if (isset($_GET['listFiles'])) {
         exit;
     }
 
-    $entries = [];
+    $dirs  = [];
+    $files = [];
 
     foreach (scandir($targetDir) as $f) {
         if ($f === '.') {
@@ -326,7 +327,7 @@ if (isset($_GET['listFiles'])) {
                     $parent = '.';
                 }
 
-                $entries[] = [
+                $dirs[] = [
                     'name' => '..',
                     'type' => 'dir',
                     'path' => $parent,
@@ -337,12 +338,21 @@ if (isset($_GET['listFiles'])) {
 
         $relPath = ($folder === '' || $folder === '.') ? $f : $folder . '/' . $f;
 
-        $entries[] = [
+        $entry = [
             'name' => $f,
             'type' => is_dir($targetDir . '/' . $f) ? 'dir' : 'file',
-            'path' => $relPath, // ✅ ini penting
+            'path' => $relPath,
         ];
+
+        if ($entry['type'] === 'dir') {
+            $dirs[] = $entry;
+        } else {
+            $files[] = $entry;
+        }
     }
+
+    // gabungkan: folder dulu baru file
+    $entries = array_merge($dirs, $files);
 
     echo json_encode([
         'success' => true,
