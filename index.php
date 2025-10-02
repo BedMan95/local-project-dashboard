@@ -165,19 +165,20 @@ foreach (glob(__DIR__ . '/.clone_log_clone_*') as $logFile) {
 				$gitDir = realpath(BASE_DIR . '/' . $proj['name'] . '/.git');
 				$hasGit = is_dir($gitDir);
 				$escapedName = htmlspecialchars(json_encode($proj['name']), ENT_QUOTES, 'UTF-8');
+
 				echo "<div class='col'>
 					<div class='d-flex align-items-stretch h-100 project-folder'>
 						<a class='project-link flex-grow-1' href='$link' data-name='$name' target='_blank' rel='noopener'>
 							<span class='folder-icon'><i class='fa-solid fa-folder'></i></span>
 							<span>$name</span>
 						</a>
-						<div class='d-flex flex-column ms-2 justify-content-center action-buttons'>
+						<div class='d-flex flex-column ms-2 justify-content-center action-buttons d-none'>
 							<button class='btn btn-sm btn-outline-secondary mb-1 edit-project-btn' data-folder='$name' title='Edit Project'>
 								<i class='fa fa-edit'></i>
 							</button>";
 				if ($hasGit) {
-					echo "<button class='btn btn-sm btn-outline-info mb-1' data-folder='$name' onclick='pullProject($escapedName)'>
-						<i class='bi bi-arrow-down-circle'></i> Pull
+					echo "<button class='btn btn-sm btn-outline-info mb-1 pull-project-btn' data-folder='$name' onclick='pullProject($escapedName)'>
+						<i class='fa fa-arrow-down'></i>
 					</button>";
 				}
 				echo "<button class='btn btn-sm btn-outline-danger mb-1 delete-project-btn' data-folder='$name' title='Delete Project'>
@@ -221,6 +222,12 @@ foreach (glob(__DIR__ . '/.clone_log_clone_*') as $logFile) {
         <li><a class="dropdown-item text-danger" href="#" id="ctx-delete"><i class="fa fa-trash me-2"></i>Delete</a></li>
     </ul>
 
-    <script src="dashboard.js"></script>
+	<ul id="contextMenu" class="dropdown-menu" style="position:absolute; display:none; z-index:1051;">
+		<li><a class="edit-project dropdown-item"><i class="fa fa-edit me-2"></i>Edit Project</a></li>
+		<li><a class="pull-project dropdown-item"><i class="fa fa-arrow-down me-2"></i>Pull Project</a></li>
+		<li><a class="delete-project dropdown-item text-danger"><i class="fa fa-trash me-2"></i>Delete Project</a></li>
+	</ul>
+
+	<script src="dashboard.js"></script>
 </body>
 </html>

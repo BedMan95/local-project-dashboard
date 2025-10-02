@@ -395,7 +395,7 @@ if (isset($_GET['listFiles'])) {
 // Get file content
 if (isset($_GET['getFile'])) {
     $folder  = isset($_GET['folder']) ? $_GET['folder'] : '.';
-    $file    = isset($_GET['file']) ? $_POST['file'] : '';
+    $file    = isset($_GET['file']) ? $_GET['file'] : '';
     $baseDir = realpath(BASE_DIR);
     $target  = realpath($baseDir . '/' . $folder . '/' . $file);
 

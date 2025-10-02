@@ -27,6 +27,11 @@ $(function () {
             'color': isDarkMode ? '#e0e0e0' : '',
             'border': isDarkMode ? '1px solid #444' : ''
         });
+        $('#contextMenu').css({
+            'background-color': isDarkMode ? '#2c2f36' : '',
+            'color': isDarkMode ? '#e0e0e0' : '',
+            'border': isDarkMode ? '1px solid #444' : ''
+        });
         $('.dropdown-item').css({ 'color': isDarkMode ? '#e0e0e0' : '' });
 
         if (typeof monaco !== 'undefined' && editorInstance) {
@@ -308,14 +313,27 @@ $(function () {
     });
 
     function pullProject(folder) {
-        $.post('api.php', { pullGithub: true, folder: folder }, function(data) {
-            if (data.success) {
-                Swal.fire('Git Pull Started', 'Pulling changes for ' + folder, 'info');
-                checkPullProgress(data.jobId, folder);
-            } else {
-                Swal.fire('Error', data.error, 'error');
+        Swal.fire({
+            title: 'Pull changes from GitHub?',
+            text: `Pull changes from GitHub for folder "${folder}"?`,
+            icon: 'question',
+            showCancelButton: true,
+            confirmButtonText: 'Pull'
+        }).then(result => {
+            if (result.isConfirmed) {
+                $.post('api.php', { pullGithub: true, folder: folder }, function(data) {
+                    if (data.success) {
+                        Swal.fire('Git Pull Started', 'Pulling changes for ' + folder, 'info');
+                        applySwalDarkmode();
+                        checkPullProgress(data.jobId, folder);
+                    } else {
+                        Swal.fire('Error', data.error, 'error');
+                        applySwalDarkmode();
+                    }
+                });
             }
         });
+        applySwalDarkmode();
     }
 
     function checkPullProgress(jobId, folder) {
@@ -323,8 +341,10 @@ $(function () {
             if (data.done) {
                 if (data.success) {
                     Swal.fire('Git Pull Complete', 'Repository updated successfully.', 'success');
+                    applySwalDarkmode();
                 } else {
                     Swal.fire('Git Pull Failed', data.error, 'error');
+                    applySwalDarkmode();
                 }
             } else {
                 // Update progress (e.g., show percentage in UI)
@@ -402,6 +422,7 @@ $(function () {
                     linksModal.hide();
                     location.reload();
                 });
+                applySwalDarkmode();
             } else {
                 $('#linkError').text(resp.error || 'Failed to save links.');
             }
@@ -707,4 +728,40 @@ $(function () {
     renderExplorer('.', $('#explorerRoot'));
 
     window.pullProject = pullProject;
+
+    let selectedFolder = null;
+
+    $('.project-folder').on('contextmenu', function(e){
+        e.preventDefault();
+        selectedFolder = $(this);
+        const hasGit = !!selectedFolder.find('.pull-project-btn').length;
+
+        $('#contextMenu .pull-project').toggle(hasGit);
+
+        $('#contextMenu')
+            .css({ top: e.pageY + 'px', left: e.pageX + 'px' })
+            .show();
+    });
+
+    $(document).click(function(){
+        $('#contextMenu').hide();
+    });
+
+    // Edit Project
+    $('#contextMenu .edit-project').click(function(){
+        selectedFolder.find('.edit-project-btn').trigger('click');
+        $('#contextMenu').hide();
+    });
+
+    // Pull Project
+    $('#contextMenu .pull-project').click(function(){
+        selectedFolder.find('.pull-project-btn').trigger('click');
+        $('#contextMenu').hide();
+    });
+
+    // Delete Project
+    $('#contextMenu .delete-project').click(function(){
+        selectedFolder.find('.delete-project-btn').trigger('click');
+        $('#contextMenu').hide();
+    });
 });
