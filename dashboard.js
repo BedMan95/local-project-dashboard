@@ -123,70 +123,61 @@ $(function () {
         applySwalDarkmode();
     }
 
-    // Project Editing
-    $('.edit-project-btn').on('click', function () {
+    $('.rename-project-btn').on('click', function () {
         const folder = $(this).data('folder');
         Swal.fire({
-            title: 'Select Edit Mode',
-            input: 'select',
-            inputOptions: { name: 'Edit Project Name', file: 'Edit Project Files' },
-            inputPlaceholder: 'Choose mode',
-            showCancelButton: true
-        }).then(choice => {
-            if (!choice.isConfirmed) return;
-            if (choice.value === 'name') {
-                Swal.fire({
-                    title: 'Edit Project Name',
-                    input: 'text',
-                    inputValue: folder,
-                    inputAttributes: { maxlength: 32, autocapitalize: 'off', autocorrect: 'off' },
-                    showCancelButton: true,
-                    confirmButtonText: 'Rename',
-                    preConfirm: newName => {
-                        if (!/^[A-Za-z0-9_\- ]{1,32}$/.test(newName)) {
-                            Swal.showValidationMessage('Allowed: letters, numbers, spaces, -, _ (max 32 chars)');
-                            return false;
-                        }
-                        if (newName === folder) {
-                            Swal.showValidationMessage('Name is unchanged.');
-                            return false;
-                        }
-                        return newName;
-                    }
-                }).then(result => {
-                    if (result.isConfirmed) {
-                        showLoading('Renaming project...');
-                        $.post('api.php', { renameProject: 1, oldName: folder, newName: result.value }, resp => {
-                            hideLoading();
-                            if (resp.success) {
-                                Swal.fire('Renamed!', '', 'success').then(() => location.reload());
-                            } else {
-                                Swal.fire('Error', resp.error || 'Failed to rename folder.', 'error');
-                            }
-                            applySwalDarkmode();
-                        }, 'json').fail(() => {
-                            hideLoading();
-                            Swal.fire('Error', 'Failed to rename folder.', 'error');
-                            applySwalDarkmode();
-                        });
-                    }
-                });
-                applySwalDarkmode();
-            } else if (choice.value === 'file') {
-                editorInstance.setValue('// pilih file untuk mulai mengedit ...');
-                showLoading('Loading project...');
-                $.getJSON('api.php', { listFiles: 1, folder: folder }, resp => {
+            title: 'Edit Project Name',
+            input: 'text',
+            inputValue: folder,
+            inputAttributes: { maxlength: 32, autocapitalize: 'off', autocorrect: 'off' },
+            showCancelButton: true,
+            confirmButtonText: 'Rename',
+            preConfirm: newName => {
+                if (!/^[A-Za-z0-9_\- ]{1,32}$/.test(newName)) {
+                    Swal.showValidationMessage('Allowed: letters, numbers, spaces, -, _ (max 32 chars)');
+                    return false;
+                }
+                if (newName === folder) {
+                    Swal.showValidationMessage('Name is unchanged.');
+                    return false;
+                }
+                return newName;
+            }
+        }).then(result => {
+            if (result.isConfirmed) {
+                showLoading('Renaming project...');
+                $.post('api.php', { renameProject: 1, oldName: folder, newName: result.value }, resp => {
                     hideLoading();
-                    if (!resp.success) {
-                        Swal.fire('Error', resp.error || 'Failed to load files.', 'error');
-                        return;
+                    if (resp.success) {
+                        Swal.fire('Renamed!', '', 'success').then(() => location.reload());
+                    } else {
+                        Swal.fire('Error', resp.error || 'Failed to rename folder.', 'error');
                     }
-                    renderExplorer(folder, $('#editorExplorer'));
-                    $('#editorModal').show();
+                    applySwalDarkmode();
+                }, 'json').fail(() => {
+                    hideLoading();
+                    Swal.fire('Error', 'Failed to rename folder.', 'error');
+                    applySwalDarkmode();
                 });
             }
         });
         applySwalDarkmode();
+    });
+
+    // Project Editing
+    $('.edit-project-btn').on('click', function () {
+        const folder = $(this).data('folder');
+        editorInstance.setValue('// select a file ...');
+        showLoading('Loading project...');
+        $.getJSON('api.php', { listFiles: 1, folder: folder }, resp => {
+            hideLoading();
+            if (!resp.success) {
+                Swal.fire('Error', resp.error || 'Failed to load files.', 'error');
+                return;
+            }
+            renderExplorer(folder, $('#editorExplorer'));
+            $('#editorModal').show();
+        });
     });
 
     // Project Deletion
@@ -434,7 +425,7 @@ $(function () {
     require.config({ paths: { vs: 'https://cdnjs.cloudflare.com/ajax/libs/monaco-editor/0.45.0/min/vs' } });
     require(['vs/editor/editor.main'], () => {
         editorInstance = monaco.editor.create(document.getElementById('monacoEditor'), {
-            value: '// Pilih file untuk mulai mengedit...',
+            value: '// select a file...',
             language: 'php',
             theme: $('body').hasClass('darkmode') ? 'vs-dark' : 'vs',
             automaticLayout: true
@@ -509,7 +500,7 @@ $(function () {
             if (resp.success) {
                 openFileInEditor(path, resp.content, guessLanguage(path));
             } else {
-                Swal.fire('Error', resp.error || 'Tidak bisa buka file', 'error');
+                Swal.fire('Error', resp.error || 'Cannot open file', 'error');
                 applySwalDarkmode();
             }
         });
@@ -559,8 +550,8 @@ $(function () {
             $.post('api.php', { createFile: 1, folder, name: res.value }, resp => {
                 Swal.fire({
                     icon: resp.success ? 'success' : 'error',
-                    title: resp.success ? 'Berhasil!' : 'Error',
-                    text: resp.success ? 'File berhasil dibuat' : (resp.error || 'Failed to create file.')
+                    title: resp.success ? 'Success!' : 'Error',
+                    text: resp.success ? 'File created' : (resp.error || 'Failed to create file.')
                 });
                 if (resp.success) refreshExplorer();
                 applySwalDarkmode();
@@ -584,8 +575,8 @@ $(function () {
             $.post('api.php', { createFolder: 1, folder, name: res.value }, resp => {
                 Swal.fire({
                     icon: resp.success ? 'success' : 'error',
-                    title: resp.success ? 'Berhasil!' : 'Error',
-                    text: resp.success ? 'Folder berhasil dibuat' : (resp.error || 'Failed to create folder.')
+                    title: resp.success ? 'Success!' : 'Error',
+                    text: resp.success ? 'Folder created' : (resp.error || 'Failed to create folder.')
                 });
                 if (resp.success) refreshExplorer();
                 applySwalDarkmode();
@@ -613,7 +604,7 @@ $(function () {
         e.preventDefault();
         $('#explorerContextMenu').hide();
         Swal.fire({
-            title: 'Nama file baru',
+            title: 'New File Name',
             input: 'text',
             inputPlaceholder: 'example.txt',
             showCancelButton: true,
@@ -624,8 +615,8 @@ $(function () {
             $.post('api.php', { createFile: 1, folder: contextTargetPath, name: result.value }, resp => {
                 Swal.fire({
                     icon: resp.success ? 'success' : 'error',
-                    title: resp.success ? 'Berhasil!' : 'Error',
-                    text: resp.success ? 'File berhasil dibuat' : (resp.error || 'Gagal membuat file')
+                    title: resp.success ? 'Success!' : 'Error',
+                    text: resp.success ? 'File created' : (resp.error || 'Gagal membuat file')
                 });
                 if (resp.success) refreshExplorer();
                 applySwalDarkmode();
@@ -638,7 +629,7 @@ $(function () {
         e.preventDefault();
         $('#explorerContextMenu').hide();
         Swal.fire({
-            title: 'Nama folder baru',
+            title: 'New Folder Name',
             input: 'text',
             inputPlaceholder: 'new-folder',
             showCancelButton: true,
@@ -649,8 +640,8 @@ $(function () {
             $.post('api.php', { createFolder: 1, folder: contextTargetPath, name: result.value }, resp => {
                 Swal.fire({
                     icon: resp.success ? 'success' : 'error',
-                    title: resp.success ? 'Berhasil!' : 'Error',
-                    text: resp.success ? 'Folder berhasil dibuat' : (resp.error || 'Gagal membuat folder')
+                    title: resp.success ? 'Success!' : 'Error',
+                    text: resp.success ? 'Folder created' : (resp.error || 'Gagal membuat folder')
                 });
                 if (resp.success) refreshExplorer();
                 applySwalDarkmode();
@@ -665,7 +656,7 @@ $(function () {
         if (!contextTargetPath) return;
         Swal.fire({
             title: 'Delete?',
-            text: `Yakin ingin menghapus ${contextTargetType} ini?\n${contextTargetPath}`,
+            text: `Are you sure you want to delete ${contextTargetType} \n${contextTargetPath}?`,
             icon: 'warning',
             showCancelButton: true,
             confirmButtonText: 'Delete',
@@ -702,7 +693,7 @@ $(function () {
             inputValue: currentName,
             showCancelButton: true,
             confirmButtonText: 'Rename',
-            inputValidator: value => !value ? 'Nama tidak boleh kosong!' : null
+            inputValidator: value => !value ? 'Name cannot be empty!' : null
         }).then(res => {
             if (!res.isConfirmed) return;
             showLoading('Renaming...');
@@ -750,6 +741,12 @@ $(function () {
     // Edit Project
     $('#contextMenu .edit-project').click(function(){
         selectedFolder.find('.edit-project-btn').trigger('click');
+        $('#contextMenu').hide();
+    });
+
+    //rename Project
+    $('#contextMenu .rename-project').click(function(){
+        selectedFolder.find('.rename-project-btn').trigger('click');
         $('#contextMenu').hide();
     });
 

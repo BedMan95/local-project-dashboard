@@ -337,7 +337,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
         $newPath = $dir . DIRECTORY_SEPARATOR . $newName;
 
         if (file_exists($newPath)) {
-            sendJsonResponse(false, [], 'File/Folder dengan nama tersebut sudah ada');
+            sendJsonResponse(false, [], 'File/Folder already exists');
         }
 
         $result = @rename($path, $newPath);

@@ -175,6 +175,9 @@ foreach (glob(__DIR__ . '/.clone_log_clone_*') as $logFile) {
 						<div class='d-flex flex-column ms-2 justify-content-center action-buttons d-none'>
 							<button class='btn btn-sm btn-outline-secondary mb-1 edit-project-btn' data-folder='$name' title='Edit Project'>
 								<i class='fa fa-edit'></i>
+							</button>
+							<button class='btn btn-sm btn-outline-secondary mb-1 rename-project-btn' data-folder='$name' title='Rename Project'>
+								<i class='fa fa-input'></i>
 							</button>";
 				if ($hasGit) {
 					echo "<button class='btn btn-sm btn-outline-info mb-1 pull-project-btn' data-folder='$name' onclick='pullProject($escapedName)'>
@@ -223,8 +226,9 @@ foreach (glob(__DIR__ . '/.clone_log_clone_*') as $logFile) {
     </ul>
 
 	<ul id="contextMenu" class="dropdown-menu" style="position:absolute; display:none; z-index:1051;">
-		<li><a class="edit-project dropdown-item"><i class="fa fa-edit me-2"></i>Edit Project</a></li>
-		<li><a class="pull-project dropdown-item"><i class="fa fa-arrow-down me-2"></i>Pull Project</a></li>
+		<li><a class="edit-project dropdown-item"><i class="fa fa-edit me-2"></i>Open Project in Editor</a></li>
+		<li><a class="rename-project dropdown-item"><i class="fa fa-pencil me-2"></i>Rename Project</a></li>
+		<li><a class="pull-project dropdown-item"><i class="fa fa-arrow-down me-2"></i>Git Pull</a></li>
 		<li><a class="delete-project dropdown-item text-danger"><i class="fa fa-trash me-2"></i>Delete Project</a></li>
 	</ul>
 
