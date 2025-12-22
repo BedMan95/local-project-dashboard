@@ -343,9 +343,9 @@ $(function () {
             }
         });
     }
+
     // Link Management
     $('#manageLinksBtn').on('click', () => {
-        loadLinks();
         $('#linkError').text('');
         linksModal.show();
     });
@@ -376,6 +376,7 @@ $(function () {
             }
         }).fail(() => $('#link-marquee').text('Select a project to open'));
     }
+    loadLinks();
 
     $('#addLinkBtn').on('click', () => {
         $('#linksTableBody').append(`
