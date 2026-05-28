@@ -197,21 +197,48 @@ foreach (glob(__DIR__ . '/.clone_log_clone_*') as $logFile) {
 
     <div id="realtimeClock"></div>
 
-    <!-- Editor Modal -->
-    <div id="editorModal" style="display:none; position:fixed; top:1%; left:2%; width:95%; height:93%; border-radius:10px; box-shadow:0 0 20px #000; z-index:1050;">
+    <!-- Editor Modal - VSCode Style -->
+    <div id="editorModal" style="display:none; position:fixed; top:0%; left:0%; width:100%; height:100%; z-index:1050;">
         <div style="height:100%; display:flex; flex-direction:column;">
-            <div class="editor-header" style="padding:10px; display:flex; justify-content:space-between; align-items:center;">
-                <span id="editorFilename"></span>
-                <button onclick="closeEditor()" style="background:#e74c3c;color:#fff;border:none;padding:5px 10px;cursor:pointer;">✕</button>
-            </div>
-            <div style="flex:1; display:flex; overflow:hidden;">
-                <div id="editorExplorer" class="editor-explorer" style="width:220px; padding:10px; overflow:auto;">
-                    <ul id="explorerRoot" class="list-unstyled"></ul>
+            <!-- Editor Header -->
+            <div class="editor-header">
+                <div class="title">
+                    <i class="fa-solid fa-code"></i>
                 </div>
-                <div id="monacoEditor" style="flex:1;"></div>
+                <div class="tab-bar" id="tabBar">
+                    <!-- Tabs will be dynamically added here -->
+                </div>
+                <div class="actions">
+                    <button onclick="saveFile()" class="btn-save" title="Save (Ctrl+S)"><i class="fa-solid fa-floppy-disk"></i></button>
+                    <button onclick="closeEditor()" class="btn-close" title="Close"><i class="fa-solid fa-xmark"></i></button>
+                </div>
             </div>
-            <div class="editor-footer" style="padding:10px; text-align:right;">
-                <button onclick="saveFile()" style="background:#2ecc71;color:#fff;border:none;padding:5px 10px;cursor:pointer;">💾 Save</button>
+            
+            <!-- Editor Content -->
+            <div style="flex:1; display:flex; overflow:hidden;">
+                <!-- File Explorer -->
+                <div id="editorExplorer" class="editor-explorer">
+                    <div class="explorer-header">EXPLORER</div>
+                    <div class="file-tree" id="explorerRoot">
+                        <ul class="list-unstyled"></ul>
+                    </div>
+                    <div class="file-actions">
+                        <button id="newFileBtn" class="btn-new-file"><i class="fa-solid fa-file-plus"></i> New File</button>
+                        <button id="newFolderBtn" class="btn-new-folder"><i class="fa-solid fa-folder-plus"></i> New Folder</button>
+                    </div>
+                </div>
+                
+                <!-- Code Editor -->
+                <div id="monacoEditor"></div>
+            </div>
+            
+            <!-- Editor Footer -->
+            <div class="editor-footer">
+                <div class="status-bar">
+                    <span id="cursorPosition">Ln 1, Col 1</span>
+                    <span id="fileEncoding" style="margin-left: auto;">UTF-8</span>
+                    <span id="fileType" style="margin-left: 8px;">Plain Text</span>
+                </div>
             </div>
         </div>
     </div>

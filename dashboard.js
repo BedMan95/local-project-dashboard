@@ -433,15 +433,101 @@ $(function () {
         });
     });
 
+    // Tab management
+    let openTabs = [];
+    let activeTabPath = null;
+
+    function addTab(path, content, language) {
+        // Check if tab already exists
+        const existingTab = openTabs.find(tab => tab.path === path);
+        if (existingTab) {
+            switchToTab(path);
+            return;
+        }
+
+        // Add new tab
+        openTabs.push({ path, content, language });
+        renderTabs();
+        switchToTab(path);
+    }
+
+    function renderTabs() {
+        const tabBar = $('#tabBar');
+        tabBar.empty();
+
+        openTabs.forEach(tab => {
+            const fileName = tab.path.split('/').pop();
+            const isActive = tab.path === activeTabPath;
+
+            const tabHtml = `
+                <div class="tab ${isActive ? 'active' : ''}" data-path="${tab.path}">
+                    <i class="fa fa-file-code"></i>
+                    <span>${fileName}</span>
+                    <span class="close-tab" data-path="${tab.path}">
+                        <i class="fa fa-times"></i>
+                    </span>
+                </div>
+            `;
+            tabBar.append(tabHtml);
+        });
+    }
+
+    function switchToTab(path) {
+        activeTabPath = path;
+        const tab = openTabs.find(t => t.path === path);
+        if (tab) {
+            currentFilePath = path;
+            editorInstance.setValue(tab.content);
+            monaco.editor.setModelLanguage(editorInstance.getModel(), tab.language);
+            renderTabs();
+        }
+    }
+
+    function closeTab(path) {
+        const index = openTabs.findIndex(tab => tab.path === path);
+        if (index === -1) return;
+
+        openTabs.splice(index, 1);
+
+        if (activeTabPath === path) {
+            if (openTabs.length > 0) {
+                const newIndex = Math.min(index, openTabs.length - 1);
+                switchToTab(openTabs[newIndex].path);
+            } else {
+                activeTabPath = null;
+                editorInstance.setValue('// select a file...');
+                $('#editorModal').hide();
+            }
+        }
+
+        renderTabs();
+    }
+
+    // Tab click handlers
+    $(document).on('click', '.tab', function(e) {
+        if (!$(e.target).closest('.close-tab').length) {
+            const path = $(this).data('path');
+            switchToTab(path);
+        }
+    });
+
+    $(document).on('click', '.close-tab', function(e) {
+        e.stopPropagation();
+        const path = $(this).data('path');
+        closeTab(path);
+    });
+
     window.openFileInEditor = (path, content, language = 'php') => {
-        currentFilePath = path;
-        $('#editorFilename').text(path);
-        editorInstance.setValue(content);
-        monaco.editor.setModelLanguage(editorInstance.getModel(), language);
+        addTab(path, content, language);
         $('#editorModal').show();
     };
 
-    window.closeEditor = () => $('#editorModal').hide();
+    window.closeEditor = () => {
+        openTabs = [];
+        activeTabPath = null;
+        renderTabs();
+        $('#editorModal').hide();
+    };
 
     window.saveFile = () => {
         const content = editorInstance.getValue();
@@ -451,6 +537,15 @@ $(function () {
             file: currentFilePath.split('/').pop(),
             content
         }, resp => {
+            if (resp.success) {
+                // Update the tab content with the saved content
+                const tab = openTabs.find(t => t.path === currentFilePath);
+                if (tab) {
+                    tab.content = content;
+                }
+                // Refresh the folder tree
+                refreshFolderTree();
+            }
             Swal.fire({
                 toast: true,
                 position: 'top-end',
