@@ -496,7 +496,6 @@ $(function () {
             } else {
                 activeTabPath = null;
                 editorInstance.setValue('// select a file...');
-                $('#editorModal').hide();
             }
         }
 
