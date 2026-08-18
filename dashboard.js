@@ -46,6 +46,51 @@ $(function () {
         applySwalDarkmode();
     }
 
+    // Dynamic Project Loading
+    function loadProjects() {
+        $.getJSON('api.php?getProjects=1', function (resp) {
+            if (resp.success && resp.projects) {
+                const $grid = $('#projectGrid').empty();
+                resp.projects.forEach(proj => {
+                    const name = $('<div>').text(proj.name).html();
+                    const link = $('<div>').text(proj.link).html();
+                    const escapedName = JSON.stringify(proj.name);
+
+                    let gitBtn = '';
+                    if (proj.hasGit) {
+                        gitBtn = `<button class='btn btn-sm btn-outline-info mb-1 pull-project-btn' data-folder='${name}' onclick='pullProject(${escapedName})'>
+                            <i class='fa fa-arrow-down'></i>
+                        </button>`;
+                    }
+
+                    const cardHtml = `<div class='col'>
+                        <div class='d-flex align-items-stretch h-100 project-folder'>
+                            <a class='project-link flex-grow-1' href='${link}' data-name='${name}' target='_blank' rel='noopener'>
+                                <span class='folder-icon'><i class='fa-solid fa-folder'></i></span>
+                                <span>${name}</span>
+                            </a>
+                            <div class='d-flex flex-column ms-2 justify-content-center action-buttons d-none'>
+                                <button class='btn btn-sm btn-outline-secondary mb-1 edit-project-btn' data-folder='${name}' title='Edit Project'>
+                                    <i class='fa fa-edit'></i>
+                                </button>
+                                <button class='btn btn-sm btn-outline-secondary mb-1 rename-project-btn' data-folder='${name}' title='Rename Project'>
+                                    <i class='fa fa-input'></i>
+                                </button>
+                                ${gitBtn}
+                                <button class='btn btn-sm btn-outline-danger mb-1 delete-project-btn' data-folder='${name}' title='Delete Project'>
+                                    <i class='fa fa-trash'></i>
+                                </button>
+                            </div>
+                        </div>
+                    </div>`;
+                    $grid.append(cardHtml);
+                });
+            }
+        });
+    }
+
+    loadProjects();
+
     // Loading Indicator
     function showLoading(message = 'Loading...') {
         Swal.fire({
@@ -91,7 +136,7 @@ $(function () {
                 $.post('api.php', { projectName: name }, (resp) => {
                     hideLoading();
                     if (resp.success) {
-                        Swal.fire('Created!', '', 'success').then(() => location.reload());
+                        Swal.fire('Created!', '', 'success').then(() => loadProjects());
                     } else {
                         Swal.fire('Error', resp.error || 'Failed to create project.', 'error');
                     }
@@ -149,7 +194,7 @@ $(function () {
                 $.post('api.php', { renameProject: 1, oldName: folder, newName: result.value }, resp => {
                     hideLoading();
                     if (resp.success) {
-                        Swal.fire('Renamed!', '', 'success').then(() => location.reload());
+                        Swal.fire('Renamed!', '', 'success').then(() => loadProjects());
                     } else {
                         Swal.fire('Error', resp.error || 'Failed to rename folder.', 'error');
                     }
@@ -196,7 +241,7 @@ $(function () {
                 $.post('api.php', { deleteProject: 1, name: name }, resp => {
                     hideLoading();
                     if (resp.success) {
-                        Swal.fire('Deleted!', '', 'success').then(() => location.reload());
+                        Swal.fire('Deleted!', '', 'success').then(() => loadProjects());
                     } else {
                         Swal.fire('Error', resp.error || 'Failed to delete folder.', 'error');
                     }

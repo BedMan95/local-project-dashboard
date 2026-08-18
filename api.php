@@ -345,6 +345,36 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
     }
 }
 
+// Get Projects list
+if (isset($_GET['getProjects'])) {
+    $projects = [];
+    $files = scandir(BASE_DIR);
+    foreach ($files as $file) {
+        if ($file !== '.' && $file !== '..' && is_dir(BASE_DIR . '/' . $file)) {
+            $filesInDir = scandir(BASE_DIR . '/' . $file);
+            $existIndex = in_array('index.php', $filesInDir) || in_array('index.html', $filesInDir);
+            if ($existIndex) {
+                $link = file_exists(BASE_DIR . "/$file/index.php") ? "$file/index.php" : "$file/index.html";
+                $gitDir = realpath(BASE_DIR . '/' . $file . '/.git');
+                $projects[] = ['name' => $file, 'link' => $link, 'hasGit' => is_dir($gitDir)];
+            } else {
+                foreach ($filesInDir as $subDir) {
+                    $subDirPath = "$file/$subDir";
+                    if ($subDir !== '.' && $subDir !== '..' && is_dir(BASE_DIR . '/' . $subDirPath)) {
+                        $subFiles = scandir(BASE_DIR . '/' . $subDirPath);
+                        if (in_array('index.php', $subFiles) || in_array('index.html', $subFiles)) {
+                            $link = file_exists(BASE_DIR . "/$subDirPath/index.php") ? "$subDirPath/index.php" : "$subDirPath/index.html";
+                            $gitDir = realpath(BASE_DIR . '/' . $subDirPath . '/.git');
+                            $projects[] = ['name' => $subDirPath, 'link' => $link, 'hasGit' => is_dir($gitDir)];
+                        }
+                    }
+                }
+            }
+        }
+    }
+    sendJsonResponse(true, ['projects' => $projects]);
+}
+
 // List directory
 if (isset($_GET['listFiles'])) {
     $folder    = isset($_GET['folder']) ? $_GET['folder'] : '.';
